@@ -1,0 +1,51 @@
+---
+interface Props {
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success';
+  size?: 'sm' | 'md' | 'lg';
+  class?: string;
+  href?: string;
+  type?: 'button' | 'submit' | 'reset';
+  disabled?: boolean;
+  fullWidth?: boolean;
+}
+
+const {
+  variant = 'primary',
+  size = 'md',
+  class: className = '',
+  href,
+  type = 'button',
+  disabled = false,
+  fullWidth = false,
+} = Astro.props;
+
+// P&B Style - Clean, minimal buttons with no rounded corners
+const baseClasses = 'inline-flex items-center justify-center uppercase tracking-widest transition-colors duration-200 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed';
+
+const variants = {
+  primary: 'bg-black text-white hover:bg-gray-800',
+  secondary: 'bg-white text-black border border-black hover:bg-gray-100',
+  outline: 'border border-gray-200 text-black hover:border-black',
+  ghost: 'text-black hover:underline',
+  danger: 'bg-accent-500 text-white hover:bg-accent-600',
+  success: 'bg-green-600 text-white hover:bg-green-700',
+};
+
+const sizes = {
+  sm: 'px-4 py-2 text-[10px]',
+  md: 'px-6 py-3 text-xs',
+  lg: 'px-10 py-4 text-sm',
+};
+
+const classes = `${baseClasses} ${variants[variant]} ${sizes[size]} ${fullWidth ? 'w-full' : ''} ${className}`;
+---
+
+{href ? (
+  <a href={href} class={classes}>
+    <slot />
+  </a>
+) : (
+  <button type={type} class={classes} disabled={disabled}>
+    <slot />
+  </button>
+)}

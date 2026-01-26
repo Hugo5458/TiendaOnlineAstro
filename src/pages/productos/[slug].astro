@@ -1,0 +1,179 @@
+---
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import ProductCard from '../../components/product/ProductCard.astro';
+import ProductGallery from '../../components/product/ProductGallery.astro';
+import AddToCartButton from '../../components/islands/AddToCartButton';
+import { getProducts, getProductBySlug } from '../../lib/supabase';
+import { formatPrice, calculateDiscount, getStockStatus } from '../../lib/utils';
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const products = await getProducts();
+  return products.map((product) => ({
+    params: { slug: product.slug },
+  }));
+}
+
+const { slug } = Astro.params;
+const product = await getProductBySlug(slug);
+
+if (!product) {
+  return Astro.redirect('/productos');
+}
+
+const discount = calculateDiscount(product.price, product.compare_at_price);
+const stockStatus = getStockStatus(product.stock);
+
+// Get related products from same category
+const allProducts = await getProducts();
+const relatedProducts = allProducts
+  .filter(p => p.category_id === product.category_id && p.id !== product.id)
+  .slice(0, 4);
+---
+
+<PublicLayout 
+  title={`${product.name} | FashionStore`}
+  description={product.description || `Compra ${product.name} en FashionStore. Moda premium.`}
+>
+  <div class="max-w-screen-2xl mx-auto px-4 lg:px-8 py-8 lg:py-12">
+    <!-- Breadcrumb - P&B Style -->
+    <nav class="text-xs uppercase tracking-wider text-gray-500 mb-8">
+      <a href="/" class="hover:text-black transition-colors">Inicio</a>
+      <span class="mx-2">/</span>
+      <a href="/productos" class="hover:text-black transition-colors">Productos</a>
+      {product.category && (
+        <>
+          <span class="mx-2">/</span>
+          <a href={`/categoria/${product.category.slug}`} class="hover:text-black transition-colors">
+            {product.category.name}
+          </a>
+        </>
+      )}
+      <span class="mx-2">/</span>
+      <span class="text-black">{product.name}</span>
+    </nav>
+    
+    <!-- Product Main Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
+      <!-- Gallery -->
+      <div class="lg:sticky lg:top-24 lg:self-start">
+        <ProductGallery images={product.images} productName={product.name} />
+      </div>
+      
+      <!-- Product Info - P&B Style -->
+      <div class="space-y-6">
+        <!-- Category -->
+        {product.category && (
+          <a 
+            href={`/categoria/${product.category.slug}`}
+            class="inline-block text-xs uppercase tracking-widest text-gray-500 hover:text-black transition-colors"
+          >
+            {product.category.name}
+          </a>
+        )}
+        
+        <!-- Title - P&B Style -->
+        <h1 class="text-2xl lg:text-3xl uppercase tracking-wider font-light">
+          {product.name}
+        </h1>
+        
+        <!-- Price - P&B Style -->
+        <div class="flex items-center gap-3">
+          <span class={`text-lg ${discount > 0 ? 'text-accent-500' : ''}`}>
+            {formatPrice(product.price)}
+          </span>
+          {product.compare_at_price && product.compare_at_price > product.price && (
+            <span class="text-lg text-gray-400 line-through">
+              {formatPrice(product.compare_at_price)}
+            </span>
+          )}
+          {discount > 0 && (
+            <span class="text-xs uppercase tracking-wider text-accent-500">
+              -{discount}%
+            </span>
+          )}
+        </div>
+        
+        <!-- Stock Status -->
+        <div class="flex items-center gap-2">
+          <span class={`w-2 h-2 rounded-full ${stockStatus.available ? 'bg-green-500' : 'bg-gray-300'}`}></span>
+          <span class="text-xs uppercase tracking-wider text-gray-500">
+            {stockStatus.label}
+          </span>
+        </div>
+        
+        <!-- Description -->
+        {product.description && (
+          <div class="py-6 border-t border-gray-100">
+            <p class="text-sm text-gray-600 leading-relaxed">
+              {product.description}
+            </p>
+          </div>
+        )}
+        
+        <!-- Divider -->
+        <div class="border-t border-gray-100"></div>
+        
+        <!-- Add to Cart (React Island) -->
+        <AddToCartButton client:load product={{
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          description: product.description,
+          price: product.price,
+          stock: product.stock,
+          category_id: product.category_id,
+          images: product.images,
+          sizes: product.sizes,
+          colors: product.colors,
+          is_featured: product.is_featured,
+          is_flash_offer: product.is_flash_offer,
+          is_active: product.is_active,
+          compare_at_price: product.compare_at_price,
+          created_at: product.created_at,
+          updated_at: product.updated_at,
+        }} />
+        
+        <!-- Trust Badges - P&B Style -->
+        <div class="pt-8 border-t border-gray-100 space-y-4">
+          <div class="flex items-center gap-3">
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+            </svg>
+            <span class="text-xs uppercase tracking-wider text-gray-500">Envío gratis +50€</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+            <span class="text-xs uppercase tracking-wider text-gray-500">Devolución gratis 30 días</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+            </svg>
+            <span class="text-xs uppercase tracking-wider text-gray-500">Pago seguro</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Related Products - P&B Style -->
+    {relatedProducts.length > 0 && (
+      <section class="mt-20 lg:mt-32 border-t border-gray-100 pt-12">
+        <div class="flex items-center justify-between mb-8">
+          <h2 class="text-sm uppercase tracking-widest">También te puede gustar</h2>
+          <a href={`/categoria/${product.category?.slug || ''}`} class="text-xs uppercase tracking-wider text-gray-500 hover:text-black transition-colors">
+            Ver más
+          </a>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
+          {relatedProducts.map((relatedProduct) => (
+            <ProductCard product={relatedProduct} />
+          ))}
+        </div>
+      </section>
+    )}
+  </div>
+</PublicLayout>

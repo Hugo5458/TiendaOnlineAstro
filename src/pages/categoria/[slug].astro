@@ -1,0 +1,12 @@
+---
+import CategoryPage from '../../components/category/CategoryPage.astro';
+
+export const prerender = false;
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect('/404');
+}
+---
+
+<CategoryPage slug={slug} />

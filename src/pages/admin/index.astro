@@ -1,0 +1,244 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { supabase, getProducts } from '../../lib/supabase';
+import { formatPrice } from '../../lib/utils';
+
+export const prerender = false; // SSR
+
+// Check authentication
+const accessToken = Astro.cookies.get('sb-access-token')?.value;
+if (!accessToken) {
+  return Astro.redirect('/login?redirect=/admin');
+}
+
+// Verify token and check if user is admin
+const { data: { user } } = await supabase.auth.getUser(accessToken);
+const ADMIN_EMAILS = ['hugodelmoral77@gmail.com', 'admin@fashionstore.com'];
+const isAdmin = !!user?.email && ADMIN_EMAILS.includes(user.email);
+
+if (!isAdmin) {
+  return Astro.redirect('/cuenta');
+}
+
+// Get dashboard stats
+const products = await getProducts();
+const { data: orders } = await supabase.from('orders').select('*');
+const { data: settings } = await supabase.from('site_settings').select('*');
+
+const stats = {
+  totalProducts: products.length,
+  activeProducts: products.filter(p => p.is_active).length,
+  lowStock: products.filter(p => p.stock <= 5 && p.stock > 0).length,
+  outOfStock: products.filter(p => p.stock === 0).length,
+  totalOrders: orders?.length || 0,
+  pendingOrders: orders?.filter(o => o.status === 'pending').length || 0,
+};
+
+const showFlashOffers = settings?.find(s => s.key === 'show_flash_offers')?.value === true;
+---
+
+<AdminLayout title="Dashboard">
+  <!-- Stats Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Total Products -->
+    <div class="bg-white rounded-xl p-6 shadow-sm border border-charcoal-100">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-charcoal-500 text-sm">Productos totales</p>
+          <p class="text-3xl font-bold text-navy-900 mt-1">{stats.totalProducts}</p>
+        </div>
+        <div class="w-12 h-12 bg-navy-100 rounded-lg flex items-center justify-center">
+          <svg class="w-6 h-6 text-navy-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+        </div>
+      </div>
+      <div class="flex items-center mt-4 text-sm">
+        <span class="text-green-600">{stats.activeProducts} activos</span>
+      </div>
+    </div>
+    
+    <!-- Low Stock Alert -->
+    <div class="bg-white rounded-xl p-6 shadow-sm border border-charcoal-100">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-charcoal-500 text-sm">Stock bajo</p>
+          <p class="text-3xl font-bold text-amber-600 mt-1">{stats.lowStock}</p>
+        </div>
+        <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
+          <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+      </div>
+      <div class="flex items-center mt-4 text-sm">
+        <span class="text-red-600">{stats.outOfStock} agotados</span>
+      </div>
+    </div>
+    
+    <!-- Orders -->
+    <div class="bg-white rounded-xl p-6 shadow-sm border border-charcoal-100">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-charcoal-500 text-sm">Pedidos totales</p>
+          <p class="text-3xl font-bold text-navy-900 mt-1">{stats.totalOrders}</p>
+        </div>
+        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+          <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+          </svg>
+        </div>
+      </div>
+      <div class="flex items-center mt-4 text-sm">
+        <span class="text-amber-600">{stats.pendingOrders} pendientes</span>
+      </div>
+    </div>
+    
+    <!-- Flash Offers Toggle -->
+    <div class="bg-white rounded-xl p-6 shadow-sm border border-charcoal-100">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <p class="text-charcoal-500 text-sm">Ofertas Flash</p>
+          <p class="text-lg font-semibold text-navy-900 mt-1">
+            {showFlashOffers ? 'Activas' : 'Inactivas'}
+          </p>
+        </div>
+        <div class={`w-12 h-12 rounded-lg flex items-center justify-center ${showFlashOffers ? 'bg-gold-100' : 'bg-charcoal-100'}`}>
+          <svg class={`w-6 h-6 ${showFlashOffers ? 'text-gold-600' : 'text-charcoal-400'}`} fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" />
+          </svg>
+        </div>
+      </div>
+      <!-- Toggle Switch -->
+      <form id="flash-offers-form" class="flex items-center">
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input 
+            type="checkbox" 
+            id="flash-offers-toggle"
+            class="sr-only peer" 
+            checked={showFlashOffers}
+          />
+          <div class="w-11 h-6 bg-charcoal-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-navy-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-charcoal-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gold-600"></div>
+          <span class="ms-3 text-sm font-medium text-charcoal-700">
+            Mostrar en tienda
+          </span>
+        </label>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Recent Activity -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Low Stock Products -->
+    <div class="bg-white rounded-xl shadow-sm border border-charcoal-100">
+      <div class="px-6 py-4 border-b border-charcoal-100 flex items-center justify-between">
+        <h2 class="font-semibold text-navy-900">Productos con stock bajo</h2>
+        <a href="/admin/productos" class="text-sm text-navy-600 hover:text-navy-800">
+          Ver todos →
+        </a>
+      </div>
+      <div class="p-6">
+        {products.filter(p => p.stock <= 5 && p.stock > 0).length > 0 ? (
+          <ul class="space-y-4">
+            {products.filter(p => p.stock <= 5 && p.stock > 0).slice(0, 5).map(product => (
+              <li class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-cream-100 rounded-lg overflow-hidden flex-shrink-0">
+                  {product.images[0] ? (
+                    <img src={product.images[0]} alt={product.name} class="w-full h-full object-cover" />
+                  ) : (
+                    <div class="w-full h-full flex items-center justify-center text-charcoal-300">
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="font-medium text-navy-900 truncate">{product.name}</p>
+                  <p class="text-sm text-charcoal-500">{formatPrice(product.price)}</p>
+                </div>
+                <span class="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded">
+                  {product.stock} uds
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p class="text-charcoal-500 text-center py-4">No hay productos con stock bajo</p>
+        )}
+      </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="bg-white rounded-xl shadow-sm border border-charcoal-100">
+      <div class="px-6 py-4 border-b border-charcoal-100">
+        <h2 class="font-semibold text-navy-900">Acciones rápidas</h2>
+      </div>
+      <div class="p-6 grid grid-cols-2 gap-4">
+        <a 
+          href="/admin/productos/nuevo"
+          class="flex flex-col items-center justify-center p-6 bg-navy-50 rounded-xl hover:bg-navy-100 transition-colors"
+        >
+          <svg class="w-8 h-8 text-navy-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          <span class="text-sm font-medium text-navy-900">Nuevo producto</span>
+        </a>
+        
+        <a 
+          href="/admin/productos"
+          class="flex flex-col items-center justify-center p-6 bg-cream-50 rounded-xl hover:bg-cream-100 transition-colors"
+        >
+          <svg class="w-8 h-8 text-charcoal-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+          </svg>
+          <span class="text-sm font-medium text-navy-900">Ver productos</span>
+        </a>
+        
+        <a 
+          href="/admin/pedidos"
+          class="flex flex-col items-center justify-center p-6 bg-green-50 rounded-xl hover:bg-green-100 transition-colors"
+        >
+          <svg class="w-8 h-8 text-green-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          <span class="text-sm font-medium text-navy-900">Ver pedidos</span>
+        </a>
+        
+        <a 
+          href="/"
+          target="_blank"
+          class="flex flex-col items-center justify-center p-6 bg-gold-50 rounded-xl hover:bg-gold-100 transition-colors"
+        >
+          <svg class="w-8 h-8 text-gold-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+          <span class="text-sm font-medium text-navy-900">Ver tienda</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</AdminLayout>
+
+<script>
+  const toggle = document.getElementById('flash-offers-toggle') as HTMLInputElement;
+  
+  toggle?.addEventListener('change', async () => {
+    try {
+      const response = await fetch('/api/settings/flash-offers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ enabled: toggle.checked }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update setting');
+      }
+    } catch (error) {
+      console.error('Error updating flash offers:', error);
+      toggle.checked = !toggle.checked; // Revert on error
+    }
+  });
+</script>

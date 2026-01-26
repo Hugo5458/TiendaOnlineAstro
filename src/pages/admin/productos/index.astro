@@ -1,0 +1,246 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import Button from '../../../components/ui/Button.astro';
+import { getProducts, getCategories } from '../../../lib/supabase';
+import { formatPrice, getStockStatus } from '../../../lib/utils';
+
+export const prerender = false; // SSR
+
+const products = await getProducts();
+const categories = await getCategories();
+
+// URL params for filtering
+const url = Astro.url;
+const categoryFilter = url.searchParams.get('categoria');
+const stockFilter = url.searchParams.get('stock');
+const searchQuery = url.searchParams.get('buscar')?.toLowerCase();
+
+let filteredProducts = products;
+
+if (categoryFilter) {
+  filteredProducts = filteredProducts.filter(p => p.category?.slug === categoryFilter);
+}
+
+if (stockFilter === 'low') {
+  filteredProducts = filteredProducts.filter(p => p.stock <= 5 && p.stock > 0);
+} else if (stockFilter === 'out') {
+  filteredProducts = filteredProducts.filter(p => p.stock === 0);
+}
+
+if (searchQuery) {
+  filteredProducts = filteredProducts.filter(p => 
+    p.name.toLowerCase().includes(searchQuery) || 
+    p.slug.toLowerCase().includes(searchQuery)
+  );
+}
+---
+
+<AdminLayout title="Gestión de Productos">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div>
+      <h2 class="text-lg text-charcoal-600">
+        {filteredProducts.length} productos encontrados
+      </h2>
+    </div>
+    <Button href="/admin/productos/nuevo" variant="primary">
+      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+      </svg>
+      Nuevo Producto
+    </Button>
+  </div>
+  
+  <!-- Filters -->
+  <div class="bg-white rounded-xl shadow-sm border border-charcoal-100 p-4 mb-6">
+    <form class="flex flex-col md:flex-row gap-4">
+      <!-- Search -->
+      <div class="flex-1">
+        <input 
+          type="text" 
+          name="buscar"
+          value={searchQuery || ''}
+          placeholder="Buscar productos..."
+          class="w-full px-4 py-2 rounded-lg border border-charcoal-200 focus:border-navy-500 focus:ring-2 focus:ring-navy-500/20 outline-none"
+        />
+      </div>
+      
+      <!-- Category Filter -->
+      <select 
+        name="categoria"
+        class="px-4 py-2 rounded-lg border border-charcoal-200 bg-white focus:border-navy-500 focus:ring-2 focus:ring-navy-500/20 outline-none"
+      >
+        <option value="">Todas las categorías</option>
+        {categories.map(cat => (
+          <option value={cat.slug} selected={categoryFilter === cat.slug}>
+            {cat.name}
+          </option>
+        ))}
+      </select>
+      
+      <!-- Stock Filter -->
+      <select 
+        name="stock"
+        class="px-4 py-2 rounded-lg border border-charcoal-200 bg-white focus:border-navy-500 focus:ring-2 focus:ring-navy-500/20 outline-none"
+      >
+        <option value="">Todo el stock</option>
+        <option value="low" selected={stockFilter === 'low'}>Stock bajo</option>
+        <option value="out" selected={stockFilter === 'out'}>Agotados</option>
+      </select>
+      
+      <Button type="submit" variant="outline">
+        Filtrar
+      </Button>
+    </form>
+  </div>
+  
+  <!-- Products Table -->
+  <div class="bg-white rounded-xl shadow-sm border border-charcoal-100 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-charcoal-50 border-b border-charcoal-100">
+          <tr>
+            <th class="text-left px-6 py-4 text-sm font-semibold text-charcoal-700">Producto</th>
+            <th class="text-left px-6 py-4 text-sm font-semibold text-charcoal-700">Categoría</th>
+            <th class="text-left px-6 py-4 text-sm font-semibold text-charcoal-700">Precio</th>
+            <th class="text-left px-6 py-4 text-sm font-semibold text-charcoal-700">Stock</th>
+            <th class="text-left px-6 py-4 text-sm font-semibold text-charcoal-700">Estado</th>
+            <th class="text-right px-6 py-4 text-sm font-semibold text-charcoal-700">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-charcoal-100">
+          {filteredProducts.length > 0 ? (
+            filteredProducts.map((product) => {
+              const stockStatus = getStockStatus(product.stock);
+              return (
+                <tr class="hover:bg-charcoal-50 transition-colors">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-4">
+                      <div class="w-12 h-12 bg-cream-100 rounded-lg overflow-hidden flex-shrink-0">
+                        {product.images[0] ? (
+                          <img src={product.images[0]} alt={product.name} class="w-full h-full object-cover" />
+                        ) : (
+                          <div class="w-full h-full flex items-center justify-center text-charcoal-300">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p class="font-medium text-navy-900">{product.name}</p>
+                        <p class="text-sm text-charcoal-500">{product.slug}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="text-charcoal-600">
+                      {product.category?.name || '-'}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="font-medium text-navy-900">{formatPrice(product.price)}</span>
+                    {product.compare_at_price && (
+                      <span class="block text-sm text-charcoal-400 line-through">
+                        {formatPrice(product.compare_at_price)}
+                      </span>
+                    )}
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class={`font-medium ${stockStatus.color}`}>
+                      {product.stock}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-2">
+                      {product.is_active ? (
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                          Activo
+                        </span>
+                      ) : (
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-charcoal-100 text-charcoal-700">
+                          Inactivo
+                        </span>
+                      )}
+                      {product.is_flash_offer && (
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gold-100 text-gold-700">
+                          Flash
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-right">
+                    <div class="flex items-center justify-end gap-2">
+                      <a 
+                        href={`/admin/productos/${product.id}`}
+                        class="p-2 text-charcoal-500 hover:text-navy-600 transition-colors"
+                        title="Editar"
+                      >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </a>
+                      <a 
+                        href={`/productos/${product.slug}`}
+                        target="_blank"
+                        class="p-2 text-charcoal-500 hover:text-green-600 transition-colors"
+                        title="Ver en tienda"
+                      >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                      <button 
+                        class="delete-product-btn p-2 text-charcoal-500 hover:text-red-600 transition-colors"
+                        data-product-id={product.id}
+                        data-product-name={product.name}
+                        title="Eliminar"
+                      >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })
+          ) : (
+            <tr>
+              <td colspan="6" class="px-6 py-12 text-center text-charcoal-500">
+                No se encontraron productos
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</AdminLayout>
+
+<script>
+  // Delete product confirmation
+  document.querySelectorAll('.delete-product-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const productId = e.currentTarget.dataset.productId;
+      const productName = e.currentTarget.dataset.productName;
+      
+      if (confirm(`¿Estás seguro de que quieres eliminar "${productName}"?`)) {
+        try {
+          const response = await fetch(`/api/products/${productId}`, {
+            method: 'DELETE',
+          });
+          
+          if (response.ok) {
+            window.location.reload();
+          } else {
+            alert('Error al eliminar el producto');
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          alert('Error al eliminar el producto');
+        }
+      }
+    });
+  });
+</script>

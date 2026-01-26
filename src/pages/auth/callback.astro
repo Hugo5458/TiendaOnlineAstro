@@ -1,0 +1,129 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+// Seteamos prerender a false
+export const prerender = false;
+---
+
+<BaseLayout title="Autenticando... | FashionStore">
+  <div class="min-h-screen flex flex-col items-center justify-center bg-cream-50 p-4">
+    <div class="text-center">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-navy-900 mx-auto mb-4"></div>
+      <p class="text-navy-900 font-medium text-lg">Autenticando...</p>
+      <p id="error-msg" class="text-red-500 text-sm mt-4 hidden px-4 py-2 bg-red-50 rounded-lg border border-red-100"></p>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { createClient } from '@supabase/supabase-js';
+
+  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+  const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+  const supabase = createClient(supabaseUrl, supabaseKey, {
+    auth: {
+      flowType: 'pkce',
+    },
+  });
+
+  // Manejar Auth en el cliente
+  async function handleClientAuth() {
+    try {
+        // 1. Limpieza selectiva: Borrar sesiones antiguas pero MANTENER el verifier de PKCE
+        localStorage.removeItem('fashionstore-user'); 
+
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+            const key = localStorage.key(i);
+            // Borramos todo lo de supabase EXCEPTO el code-verifier
+            // Esto asegura que no recuperamos sesiones viejas por error
+            if (key && key.startsWith('sb-') && !key.includes('code-verifier')) {
+                localStorage.removeItem(key);
+            }
+        }
+
+        // 2. Detectar si hay CODE (PKCE Flow)
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const errorParam = urlParams.get('error');
+        const errorDesc = urlParams.get('error_description');
+
+        if (errorParam) {
+            throw new Error(errorDesc || errorParam);
+        }
+
+        if (code) {
+            // Intentar intercambio de código en el cliente (que tiene el verifier)
+            const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+            
+            if (!error && data?.session) {
+                 // Éxito: Guardar cookies y redirigir
+                 await setCookiesAndRedirect(data.session);
+                 return;
+            }
+            // Si hay error, seguimos al fallback por si acaso
+            if (error) console.error('Error PKCE:', error);
+        }
+
+        // 3. Fallback: Implicit Flow (Hash) o sesión ya activa
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) throw error;
+
+        if (session) {
+            await setCookiesAndRedirect(session);
+        } else {
+           // Si no hay sesión ni código, redirigir al login tras timeout
+           setTimeout(() => {
+              if (!window.location.hash && !code) {
+                 window.location.href = '/login';
+              }
+           }, 2000);
+        }
+        
+        // Listener por si entra por hash más tarde
+        supabase.auth.onAuthStateChange(async (_, session) => {
+          if (session) {
+            await setCookiesAndRedirect(session);
+          }
+        });
+
+    } catch (e) {
+        console.error(e);
+        const errElem = document.getElementById('error-msg');
+        if (errElem) {
+            errElem.textContent = 'Error de autenticación: ' + e.message;
+            errElem.classList.remove('hidden');
+        }
+        // Redirigir al login tras error visible
+        setTimeout(() => window.location.href = '/login', 3000);
+    }
+  }
+
+  async function setCookiesAndRedirect(session: any) {
+      document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+      document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+
+      const ADMIN_EMAILS = ['hugodelmoral77@gmail.com', 'admin@fashionstore.com'];
+      const isAdmin = !!session?.user?.email && ADMIN_EMAILS.includes(session.user.email);
+      
+      try {
+        // Verificar si el perfil está completo
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('phone, address')
+            .eq('id', session.user.id)
+            .single();
+
+        if (!profile || !profile.phone || !profile.address) {
+            window.location.href = '/completar-perfil';
+        } else {
+            window.location.href = isAdmin ? '/admin' : '/cuenta';
+        }
+      } catch (e) {
+          // Si falla la comprobación, ir a cuenta por defecto
+          window.location.href = isAdmin ? '/admin' : '/cuenta';
+      }
+  }
+
+  handleClientAuth();
+</script>

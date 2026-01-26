@@ -1,0 +1,265 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import ProductCard from '../components/product/ProductCard.astro';
+import { getProducts, getShowFlashOffers, getCategories } from '../lib/supabase';
+
+// Get data
+const showFlashOffers = await getShowFlashOffers();
+const flashOfferProducts = showFlashOffers ? await getProducts({ flashOffer: true, limit: 4 }) : [];
+const featuredProducts = await getProducts({ featured: true, limit: 8 });
+const newProducts = await getProducts({ limit: 8 });
+const categories = await getCategories();
+
+// Separar categorías principales (Hombre y Mujer) de subcategorías
+const mainCategories = categories.filter(c => c.slug === 'hombre' || c.slug === 'mujer');
+const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== 'mujer');
+---
+
+<PublicLayout title="FashionStore - Moda Online para Hombre y Mujer">
+  <!-- Hero Section - P&B Style with Full-Width Images -->
+  <section class="relative">
+    <!-- Main Hero Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2">
+      <!-- Hombre -->
+      <a href="/categoria/hombre" class="group relative aspect-[3/4] md:aspect-[4/5] overflow-hidden">
+        <img 
+          src="https://images.unsplash.com/photo-1617137968427-85924c800a22?w=1200&h=1500&fit=crop" 
+          alt="Colección Hombre" 
+          class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+        />
+        <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+        <div class="absolute bottom-8 left-8 md:bottom-12 md:left-12">
+          <h2 class="text-white text-3xl md:text-5xl uppercase tracking-widest font-light">Hombre</h2>
+          <span class="inline-block mt-4 text-white text-xs uppercase tracking-widest border-b border-white pb-1 group-hover:border-white/50 transition-colors">
+            Ver colección
+          </span>
+        </div>
+      </a>
+      
+      <!-- Mujer -->
+      <a href="/categoria/mujer" class="group relative aspect-[3/4] md:aspect-[4/5] overflow-hidden">
+        <img 
+          src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1200&h=1500&fit=crop" 
+          alt="Colección Mujer" 
+          class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+        />
+        <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+        <div class="absolute bottom-8 left-8 md:bottom-12 md:left-12">
+          <h2 class="text-white text-3xl md:text-5xl uppercase tracking-widest font-light">Mujer</h2>
+          <span class="inline-block mt-4 text-white text-xs uppercase tracking-widest border-b border-white pb-1 group-hover:border-white/50 transition-colors">
+            Ver colección
+          </span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <!-- Sales Banner - P&B Style -->
+  {showFlashOffers && flashOfferProducts.length > 0 && (
+    <section class="bg-accent-500 py-4">
+      <div class="max-w-screen-2xl mx-auto px-4 lg:px-8 flex items-center justify-center gap-4">
+        <span class="text-white text-sm uppercase tracking-widest">Rebajas hasta -50%</span>
+        <a href="/productos?ofertas=true" class="text-white text-xs uppercase tracking-wider underline hover:no-underline">
+          Ver todo
+        </a>
+      </div>
+    </section>
+  )}
+
+  <!-- Categories Carousel - P&B Style -->
+  <section class="py-12 lg:py-16 border-b border-gray-100">
+    <div class="max-w-screen-2xl mx-auto px-4 lg:px-8">
+      <div class="flex items-center justify-between mb-8">
+        <h2 class="text-sm uppercase tracking-widest">Categorías</h2>
+        <a href="/productos" class="text-xs uppercase tracking-wider text-gray-500 hover:text-black transition-colors">
+          Ver todo
+        </a>
+      </div>
+      
+      <!-- Horizontal Scroll Categories -->
+      <div class="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
+        {subCategories.slice(0, 8).map((category) => (
+          <a 
+            href={`/categoria/${category.slug}`}
+            class="flex-shrink-0 group"
+          >
+            <div class="w-32 h-32 md:w-40 md:h-40 rounded-full bg-gray-100 overflow-hidden mb-3 group-hover:opacity-80 transition-opacity">
+              <div class="w-full h-full flex items-center justify-center text-gray-400">
+                <svg class="w-10 h-10" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                </svg>
+              </div>
+            </div>
+            <span class="block text-center text-xs uppercase tracking-wider">
+              {category.name}
+            </span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Flash Offers - P&B Style -->
+  {showFlashOffers && flashOfferProducts.length > 0 && (
+    <section class="py-12 lg:py-16 border-b border-gray-100">
+      <div class="max-w-screen-2xl mx-auto px-4 lg:px-8">
+        <div class="flex items-center justify-between mb-8">
+          <div class="flex items-center gap-4">
+            <h2 class="text-sm uppercase tracking-widest text-accent-500">Ofertas</h2>
+            <span class="text-xs text-gray-400">Tiempo limitado</span>
+          </div>
+          <a href="/productos?ofertas=true" class="text-xs uppercase tracking-wider text-gray-500 hover:text-black transition-colors">
+            Ver todo
+          </a>
+        </div>
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
+          {flashOfferProducts.map((product) => (
+            <ProductCard product={product} />
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- Featured Products - P&B Style -->
+  <section class="py-12 lg:py-16 border-b border-gray-100">
+    <div class="max-w-screen-2xl mx-auto px-4 lg:px-8">
+      <div class="flex items-center justify-between mb-8">
+        <h2 class="text-sm uppercase tracking-widest">Lo más vendido</h2>
+        <a href="/productos" class="text-xs uppercase tracking-wider text-gray-500 hover:text-black transition-colors">
+          Ver todo
+        </a>
+      </div>
+      
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
+        {featuredProducts.map((product) => (
+          <ProductCard product={product} />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Editorial Banner - P&B Style -->
+  <section class="relative aspect-[16/9] md:aspect-[21/9] overflow-hidden">
+    <img 
+      src="https://images.unsplash.com/photo-1445205170230-053b83016050?w=2000&h=800&fit=crop" 
+      alt="Nueva Colección" 
+      class="w-full h-full object-cover"
+    />
+    <div class="absolute inset-0 bg-black/20"></div>
+    <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+      <span class="text-white text-xs uppercase tracking-widest mb-4">Nueva Temporada</span>
+      <h2 class="text-white text-4xl md:text-6xl lg:text-7xl uppercase tracking-widest font-light mb-6">Colección 2026</h2>
+      <a 
+        href="/productos" 
+        class="inline-block px-8 py-3 bg-white text-black text-xs uppercase tracking-widest hover:bg-black hover:text-white transition-colors"
+      >
+        Descubrir
+      </a>
+    </div>
+  </section>
+
+  <!-- New Arrivals - P&B Style -->
+  <section class="py-12 lg:py-16 border-b border-gray-100">
+    <div class="max-w-screen-2xl mx-auto px-4 lg:px-8">
+      <div class="flex items-center justify-between mb-8">
+        <h2 class="text-sm uppercase tracking-widest">Novedades</h2>
+        <a href="/productos" class="text-xs uppercase tracking-wider text-gray-500 hover:text-black transition-colors">
+          Ver todo
+        </a>
+      </div>
+      
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
+        {newProducts.slice(0, 4).map((product) => (
+          <ProductCard product={product} />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Trust Badges - P&B Minimal Style -->
+  <section class="py-12 lg:py-16 border-b border-gray-100">
+    <div class="max-w-screen-2xl mx-auto px-4 lg:px-8">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
+        <div>
+          <div class="flex items-center justify-center mb-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+            </svg>
+          </div>
+          <h3 class="text-xs uppercase tracking-widest mb-1">Envío gratis</h3>
+          <p class="text-xs text-gray-500">En pedidos +50€</p>
+        </div>
+        
+        <div>
+          <div class="flex items-center justify-center mb-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+          </div>
+          <h3 class="text-xs uppercase tracking-widest mb-1">Devolución gratis</h3>
+          <p class="text-xs text-gray-500">30 días para devolver</p>
+        </div>
+        
+        <div>
+          <div class="flex items-center justify-center mb-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+            </svg>
+          </div>
+          <h3 class="text-xs uppercase tracking-widest mb-1">Pago seguro</h3>
+          <p class="text-xs text-gray-500">Transacciones protegidas</p>
+        </div>
+        
+        <div>
+          <div class="flex items-center justify-center mb-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
+            </svg>
+          </div>
+          <h3 class="text-xs uppercase tracking-widest mb-1">Atención 24/7</h3>
+          <p class="text-xs text-gray-500">Estamos para ayudarte</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Newsletter Section - P&B Style -->
+  <section class="py-16 lg:py-24">
+    <div class="max-w-xl mx-auto px-4 text-center">
+      <h2 class="text-2xl md:text-3xl uppercase tracking-widest font-light mb-4">Newsletter</h2>
+      <p class="text-sm text-gray-600 mb-8">
+        Suscríbete y consigue un 10% de descuento en tu primera compra. Además, recibe las últimas novedades y ofertas exclusivas.
+      </p>
+      <form class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+        <input 
+          type="email" 
+          placeholder="Tu email"
+          required
+          class="flex-1 px-4 py-3 border border-gray-200 text-sm focus:border-black focus:outline-none transition-colors text-center sm:text-left"
+        />
+        <button 
+          type="submit" 
+          class="px-8 py-3 bg-black text-white text-xs uppercase tracking-widest hover:bg-gray-800 transition-colors"
+        >
+          Suscribirse
+        </button>
+      </form>
+      <p class="text-xs text-gray-400 mt-4">
+        Al suscribirte aceptas nuestra política de privacidad
+      </p>
+    </div>
+  </section>
+</PublicLayout>
+
+<style>
+  /* Hide scrollbar for categories carousel */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+</style>

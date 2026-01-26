@@ -1,0 +1,167 @@
+---
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import ProductCard from '../../components/product/ProductCard.astro';
+import { getProducts, getCategories } from '../../lib/supabase';
+import CategoryControls from './CategoryControls.tsx';
+
+export interface Props {
+  slug: string;
+}
+
+const { slug } = Astro.props as Props;
+
+const allCategories = await getCategories();
+
+const isMainCategory = slug === 'hombre' || slug === 'mujer';
+
+// Determine subcategories
+const subcategories = isMainCategory ? allCategories.filter(c => {
+  if (slug === 'hombre') {
+    return ['camisas', 'pantalones', 'camisetas', 'chalecos', 'trajes', 'accesorios', 
+            'camisas-hombre', 'pantalones-hombre', 'calzado-hombre'].includes(c.slug);
+  } else if (slug === 'mujer') {
+    return ['vestidos', 'blusas', 'faldas', 'calzado-mujer', 'accesorios', 
+            'camisas', 'pantalones'].includes(c.slug);
+  }
+  return false;
+}) : [];
+
+// Fetch products
+let allProducts = [];
+if (isMainCategory) {
+  allProducts = await getProducts();
+} else {
+  allProducts = await getProducts({ categorySlug: slug });
+}
+
+// Filter products for main categories
+let products = [];
+if (isMainCategory) {
+  const subcategorySlugs = subcategories.map(s => s.slug);
+  products = allProducts.filter(p => subcategorySlugs.includes(p.category?.slug || ''));
+} else {
+  products = allProducts.filter(p => p.category?.slug === slug);
+}
+
+// Capitalize category name
+const categoryName = slug.charAt(0).toUpperCase() + slug.slice(1).replace('-', ' ');
+
+const heroImages: Record<string, string> = {
+  'hombre': 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=1600&h=800&fit=crop',
+  'mujer': 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1600&h=800&fit=crop',
+  'vestidos': 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=1600&h=800&fit=crop',
+  'blusas': 'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?w=1600&h=800&fit=crop',
+  'trajes': 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=1600&h=800&fit=crop',
+  'calzado-mujer': 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=1600&h=800&fit=crop',
+};
+const heroImage = heroImages[slug] || heroImages['hombre'];
+---
+
+<PublicLayout title={`${categoryName} | FashionStore`} description={`Compra en la categoría ${categoryName}`}>
+  <!-- Hero Banner - P&B Style -->
+  <section class="relative aspect-[16/9] md:aspect-[21/9] overflow-hidden">
+    <img src={heroImage} alt={categoryName} class="absolute inset-0 w-full h-full object-cover" />
+    <div class="absolute inset-0 bg-black/30"></div>
+    <div class="absolute inset-0 flex items-center justify-center">
+      <div class="text-center">
+        <h1 class="text-4xl md:text-6xl lg:text-7xl text-white uppercase tracking-widest font-light">
+          {categoryName}
+        </h1>
+      </div>
+    </div>
+  </section>
+
+  <!-- Subcategories Navigation - P&B Style -->
+  {isMainCategory && subcategories.length > 0 && (
+    <section class="border-b border-gray-100">
+      <div class="max-w-screen-2xl mx-auto px-4 lg:px-8">
+        <nav class="flex items-center gap-6 overflow-x-auto py-4 scrollbar-hide">
+          <a 
+            href={`/categoria/${slug}`}
+            class="text-xs uppercase tracking-widest whitespace-nowrap hover:opacity-70 transition-opacity border-b border-black pb-1"
+          >
+            Ver todo
+          </a>
+          {subcategories.map((subcat) => (
+            <a 
+              href={`/categoria/${subcat.slug}`}
+              class="text-xs uppercase tracking-widest text-gray-500 whitespace-nowrap hover:text-black transition-colors"
+            >
+              {subcat.name}
+            </a>
+          ))}
+        </nav>
+      </div>
+    </section>
+  )}
+
+  <!-- Products Grid -->
+  <section class="py-8 lg:py-12">
+    <div class="max-w-screen-2xl mx-auto px-4 lg:px-8">
+      <!-- Filter Bar - P&B Style -->
+      <div class="flex items-center justify-between py-4 border-b border-gray-100 mb-8">
+        <span class="text-xs text-gray-500 uppercase tracking-wider">
+          {products.length} {products.length === 1 ? 'producto' : 'productos'}
+        </span>
+        
+        <div class="flex items-center gap-4">
+          <!-- Filter Button -->
+          <button 
+            id="filter-toggle"
+            class="flex items-center gap-2 text-xs uppercase tracking-wider hover:opacity-70 transition-opacity"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+            </svg>
+            Filtrar
+          </button>
+          
+          <!-- Sort Dropdown -->
+          <div class="relative">
+            <select 
+              id="sort-select"
+              class="appearance-none bg-transparent text-xs uppercase tracking-wider cursor-pointer hover:opacity-70 transition-opacity pr-6"
+            >
+              <option value="default">Ordenar por</option>
+              <option value="price-asc">Precio: menor a mayor</option>
+              <option value="price-desc">Precio: mayor a menor</option>
+              <option value="name">Nombre</option>
+              <option value="newest">Más recientes</option>
+            </select>
+            <svg class="w-3 h-3 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Products Grid - P&B 4 Column -->
+      <div id="products-grid">
+        <CategoryControls client:load products={products} />
+      </div>
+
+      <!-- Empty State -->
+      {products.length === 0 && (
+        <div class="text-center py-20">
+          <p class="text-gray-500 mb-6">No hay productos disponibles en esta categoría</p>
+          <a 
+            href="/productos" 
+            class="inline-block px-8 py-3 bg-black text-white text-xs uppercase tracking-widest hover:bg-gray-800 transition-colors"
+          >
+            Ver todos los productos
+          </a>
+        </div>
+      )}
+    </div>
+  </section>
+</PublicLayout>
+
+<style>
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+</style>

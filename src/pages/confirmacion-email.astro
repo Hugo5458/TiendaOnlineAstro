@@ -1,0 +1,83 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Button from '../components/ui/Button.astro';
+
+export const prerender = false;
+---
+
+<BaseLayout title="Email Confirmado | FashionStore">
+  <div class="min-h-screen flex items-center justify-center bg-cream-50 px-4 py-12">
+    <div class="w-full max-w-lg bg-white rounded-2xl shadow-xl p-8 sm:p-12 text-center transform transition-all duration-500 hover:scale-105">
+      
+      <!-- Icon Animation -->
+      <div class="mb-8 relative">
+        <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto animate-pulse">
+          <svg class="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" class="animate-draw" />
+          </svg>
+        </div>
+      </div>
+
+      <h1 class="text-3xl font-serif font-bold text-navy-900 mb-4">
+        ¡Email Confirmado!
+      </h1>
+      
+      <p class="text-charcoal-600 mb-8 text-lg leading-relaxed">
+        Tu cuenta ha sido verificada correctamente. Ya eres parte de la comunidad <span class="font-bold text-navy-800">FashionStore</span>.
+      </p>
+
+      <div class="space-y-4">
+        <Button href="/login" variant="primary" size="lg" fullWidth>
+          Iniciar Sesión
+        </Button>
+        
+        <a href="/" class="block text-sm text-charcoal-500 hover:text-navy-600 transition-colors mt-6">
+          Ir a la página principal
+        </a>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  // Handle Supabase Auth redirect hash
+  import { supabase } from '../lib/supabase';
+
+  async function handleAuthRedirect() {
+    // If there's a hash with access_token (implicit flow) or we just needed to land here
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session) {
+      // Store user info if available to ensure smooth login
+      if (session.user) {
+         localStorage.setItem('fashionstore-user', JSON.stringify({
+            username: session.user.user_metadata?.username || session.user.email?.split('@')[0],
+            loggedInAt: new Date().toISOString()
+         }));
+      }
+      
+      // Auto-redirect to account page since we are verified
+      setTimeout(() => {
+          window.location.href = '/cuenta';
+      }, 1500);
+    }
+  }
+
+  handleAuthRedirect();
+</script>
+
+<style>
+  @keyframes draw {
+    from {
+      stroke-dasharray: 100;
+      stroke-dashoffset: 100;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  
+  .animate-draw {
+    animation: draw 1s ease-out forwards;
+  }
+</style>

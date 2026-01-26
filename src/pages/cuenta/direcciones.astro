@@ -1,0 +1,222 @@
+---
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import Button from '../../components/ui/Button.astro';
+import { getCustomerProfile } from '../../lib/supabase';
+
+export const prerender = false; // SSR for auth check
+
+// Check if user is logged in
+const authToken = Astro.cookies.get('sb-access-token')?.value;
+if (!authToken) {
+  return Astro.redirect('/login');
+}
+
+// Get user profile with addresses
+const profile = await getCustomerProfile(authToken);
+const addresses = profile?.addresses || [];
+---
+
+<PublicLayout title="Mis Direcciones | FashionStore">
+  <div class="min-h-screen bg-gradient-to-b from-primary-50 via-white to-primary-50/50">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+      <!-- Breadcrumb -->
+      <nav class="text-sm text-primary-600 mb-8 flex items-center gap-2">
+        <a href="/" class="hover:text-primary-900 transition-colors">Inicio</a>
+        <span class="text-primary-300">/</span>
+        <a href="/cuenta" class="hover:text-primary-900 transition-colors">Mi Cuenta</a>
+        <span class="text-primary-300">/</span>
+        <span class="text-primary-900 font-semibold">Mis Direcciones</span>
+      </nav>
+
+      <!-- Header with Add Button -->
+      <div class="mb-12 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 animate-slide-down">
+        <div>
+          <h1 class="text-4xl lg:text-5xl font-serif font-bold text-primary-950 mb-2">
+            Mis Direcciones
+          </h1>
+          <p class="text-primary-700 text-lg">Gestiona tus direcciones de envío</p>
+        </div>
+        <Button href="#add-address" variant="secondary" class="group">
+          <span class="flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Agregar dirección
+          </span>
+        </Button>
+      </div>
+
+      {addresses.length === 0 ? (
+        <!-- Empty State -->
+        <div class="max-w-md mx-auto text-center py-20 animate-slide-up">
+          <div class="w-32 h-32 rounded-full bg-gradient-to-br from-primary-100 to-primary-50 flex items-center justify-center mx-auto mb-8">
+            <svg class="w-16 h-16 text-primary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </div>
+          <h2 class="text-3xl font-serif font-bold text-primary-950 mb-3">
+            Sin direcciones registradas
+          </h2>
+          <p class="text-primary-700 mb-10 text-lg leading-relaxed">
+            Agrega una dirección de envío para que sea más rápido completar tus compras.
+          </p>
+          <Button href="#add-address" variant="secondary" size="lg">
+            Agregar primera dirección
+          </Button>
+        </div>
+      ) : (
+        <!-- Addresses Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+          {addresses.map((address, idx) => (
+            <div class={`p-6 rounded-2xl border-2 border-primary-200/50 bg-white shadow-md hover:shadow-elegant transition-all duration-300 hover:scale-105 animate-scale-in group cursor-pointer`} style={`animation-delay: ${idx * 100}ms`}>
+              <div class="flex items-start justify-between mb-4">
+                <div>
+                  <h3 class="text-lg font-semibold text-primary-950 group-hover:text-primary-700 transition-colors">
+                    {address.label || `Dirección ${idx + 1}`}
+                  </h3>
+                  {address.is_default && (
+                    <span class="inline-block mt-2 px-3 py-1 bg-success-100 text-success-700 text-xs font-semibold rounded-lg">
+                      ⭐ Dirección Principal
+                    </span>
+                  )}
+                </div>
+                <button class="p-2 text-primary-400 hover:text-danger-600 transition-colors hover:scale-110" title="Eliminar dirección">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+
+              <div class="space-y-2 text-primary-700 mb-6 border-t border-primary-100/50 pt-4">
+                <p class="flex items-start gap-3">
+                  <span class="text-lg mt-1">📍</span>
+                  <span>{address.street_address}</span>
+                </p>
+                {address.apartment && (
+                  <p class="flex items-start gap-3">
+                    <span class="text-lg mt-1">🏢</span>
+                    <span>{address.apartment}</span>
+                  </p>
+                )}
+                <p class="flex items-start gap-3">
+                  <span class="text-lg mt-1">🌆</span>
+                  <span>{address.city}, {address.postal_code}</span>
+                </p>
+                <p class="flex items-start gap-3">
+                  <span class="text-lg mt-1">🌍</span>
+                  <span>{address.country}</span>
+                </p>
+              </div>
+
+              <div class="flex gap-2">
+                <Button variant="ghost" size="sm" class="flex-1 text-primary-600 hover:text-primary-900">
+                  Editar
+                </Button>
+                {!address.is_default && (
+                  <Button variant="ghost" size="sm" class="flex-1 text-primary-600 hover:text-primary-900">
+                    Hacer principal
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <!-- Add Address Form (Hidden by default) -->
+      <div id="add-address" class="max-w-2xl mx-auto mb-12 hidden">
+        <div class="bg-white rounded-2xl border-2 border-primary-200/50 p-8 shadow-elegant animate-slide-up">
+          <h2 class="text-2xl font-serif font-bold text-primary-950 mb-6">
+            Agregar nueva dirección
+          </h2>
+
+          <form class="space-y-6">
+            <!-- Name/Label -->
+            <div>
+              <label class="block text-sm font-semibold text-primary-900 mb-2">
+                Nombre de la dirección
+              </label>
+              <input type="text" placeholder="ej: Casa, Trabajo, etc." class="w-full px-4 py-3 rounded-xl border-2 border-primary-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-300/50 outline-none transition-all" />
+              <p class="text-xs text-primary-600 mt-1">Para identificar esta dirección</p>
+            </div>
+
+            <!-- Full Name -->
+            <div>
+              <label class="block text-sm font-semibold text-primary-900 mb-2">
+                Nombre completo
+              </label>
+              <input type="text" placeholder="Tu nombre" class="w-full px-4 py-3 rounded-xl border-2 border-primary-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-300/50 outline-none transition-all" />
+            </div>
+
+            <!-- Address -->
+            <div>
+              <label class="block text-sm font-semibold text-primary-900 mb-2">
+                Calle y número
+              </label>
+              <input type="text" placeholder="Calle Principal 123" class="w-full px-4 py-3 rounded-xl border-2 border-primary-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-300/50 outline-none transition-all" />
+            </div>
+
+            <!-- Apartment -->
+            <div>
+              <label class="block text-sm font-semibold text-primary-900 mb-2">
+                Apartamento, suite, etc. (Opcional)
+              </label>
+              <input type="text" placeholder="Apt. 4B" class="w-full px-4 py-3 rounded-xl border-2 border-primary-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-300/50 outline-none transition-all" />
+            </div>
+
+            <!-- City & Postal Code -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-primary-900 mb-2">
+                  Ciudad
+                </label>
+                <input type="text" placeholder="Madrid" class="w-full px-4 py-3 rounded-xl border-2 border-primary-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-300/50 outline-none transition-all" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-primary-900 mb-2">
+                  Código postal
+                </label>
+                <input type="text" placeholder="28001" class="w-full px-4 py-3 rounded-xl border-2 border-primary-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-300/50 outline-none transition-all" />
+              </div>
+            </div>
+
+            <!-- Country -->
+            <div>
+              <label class="block text-sm font-semibold text-primary-900 mb-2">
+                País
+              </label>
+              <select class="w-full px-4 py-3 rounded-xl border-2 border-primary-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-300/50 outline-none transition-all">
+                <option value="Spain">España</option>
+                <option value="Other">Otro país</option>
+              </select>
+            </div>
+
+            <!-- Set as Default -->
+            <label class="flex items-center gap-3 p-4 bg-primary-50 rounded-xl border-2 border-primary-200/50 cursor-pointer hover:bg-primary-100 transition-colors">
+              <input type="checkbox" class="w-5 h-5 accent-primary-600" />
+              <span class="font-medium text-primary-900">Establecer como dirección principal</span>
+            </label>
+
+            <!-- Actions -->
+            <div class="flex gap-4">
+              <Button href="#" variant="secondary" class="flex-1">
+                Guardar dirección
+              </Button>
+              <Button href="#" variant="ghost" class="flex-1 text-primary-600">
+                Cancelar
+              </Button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Navigation Links -->
+      <div class="flex gap-4">
+        <a href="/cuenta" class="inline-flex items-center gap-2 text-primary-600 hover:text-primary-900 font-medium transition-colors">
+          ← Volver a mi cuenta
+        </a>
+      </div>
+    </div>
+  </div>
+</PublicLayout>

@@ -1,0 +1,78 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import Button from '../../components/ui/Button.astro';
+import { supabase } from '../../lib/supabase';
+
+export const prerender = false; // SSR
+
+const { data: settings } = await supabase.from('site_settings').select('*');
+
+const showFlashOffers = settings?.find(s => s.key === 'show_flash_offers')?.value === true;
+---
+
+<AdminLayout title="Configuración">
+  <div class="max-w-3xl space-y-6">
+    <div class="bg-white rounded-xl shadow-sm border border-charcoal-100 p-6">
+      <div class="flex items-start justify-between gap-6">
+        <div>
+          <h2 class="text-lg font-semibold text-navy-900">Ofertas Flash</h2>
+          <p class="text-sm text-charcoal-600 mt-1">
+            Activa o desactiva la sección de ofertas flash en la tienda.
+          </p>
+        </div>
+
+        <form id="flash-offers-form" class="flex items-center">
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              id="flash-offers-toggle"
+              class="sr-only peer"
+              checked={showFlashOffers}
+            />
+            <div class="w-11 h-6 bg-charcoal-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-navy-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-charcoal-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gold-600"></div>
+            <span class="ms-3 text-sm font-medium text-charcoal-700">
+              {showFlashOffers ? 'Activas' : 'Inactivas'}
+            </span>
+          </label>
+        </form>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-charcoal-100 p-6">
+      <h2 class="text-lg font-semibold text-navy-900">Acciones</h2>
+      <p class="text-sm text-charcoal-600 mt-1">Atajos rápidos de administración.</p>
+
+      <div class="mt-4 flex flex-col sm:flex-row gap-3">
+        <Button href="/admin" variant="outline">
+          Volver al dashboard
+        </Button>
+        <Button href="/admin/productos" variant="outline">
+          Gestionar productos
+        </Button>
+      </div>
+    </div>
+  </div>
+</AdminLayout>
+
+<script>
+  const toggle = document.getElementById('flash-offers-toggle') as HTMLInputElement;
+
+  toggle?.addEventListener('change', async () => {
+    try {
+      const response = await fetch('/api/settings/flash-offers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ enabled: toggle.checked }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update setting');
+      }
+    } catch (error) {
+      console.error('Error updating flash offers:', error);
+      toggle.checked = !toggle.checked;
+    }
+  });
+</script>

@@ -1,0 +1,412 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import Button from '../components/ui/Button.astro';
+import { supabase } from '../lib/supabase';
+
+export const prerender = false;
+
+// Check authentication
+const { isSupabaseConfigured } = await import('../lib/supabase');
+const accessToken = Astro.cookies.get('sb-access-token')?.value;
+
+// In demo mode, we allow access if the cookie exists or if we're in demo
+if (!accessToken && isSupabaseConfigured()) {
+  return Astro.redirect('/login?redirect=/cuenta');
+}
+
+// Get user profile
+let profile = null;
+let user = null;
+
+if (isSupabaseConfigured() && accessToken) {
+  const { data: { user: authUser } } = await supabase.auth.getUser(accessToken);
+  user = authUser;
+  if (user) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+    
+    // If profile exists in DB, use it. Otherwise, fallback to user_metadata from Auth
+    if (data) {
+      profile = data;
+    } else if (user.user_metadata) {
+      profile = {
+        username: user.user_metadata.username || '',
+        email: user.email || '',
+        full_name: user.user_metadata.full_name || '',
+        phone: user.user_metadata.phone || '',
+        address: user.user_metadata.address || '',
+        postal_code: user.user_metadata.postal_code || '',
+        city: user.user_metadata.city || '',
+        document_number: user.user_metadata.document_number || ''
+      };
+    }
+  }
+} else {
+  // Demo profile
+  profile = {
+    username: 'demo_user',
+    email: 'demo@example.com',
+    full_name: 'Usuario Demo',
+    phone: '600000000',
+    address: 'Calle Demo 123',
+    postal_code: '28001',
+    city: 'Madrid',
+    document_number: '12345678Z'
+  };
+}
+
+let success = '';
+let error = '';
+
+// Handle profile update
+if (Astro.request.method === 'POST') {
+  if (isSupabaseConfigured() && user) {
+    const formData = await Astro.request.formData();
+    
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({
+        full_name: formData.get('full_name'),
+        phone: formData.get('phone'),
+        address: formData.get('address'),
+        postal_code: formData.get('postal_code'),
+        city: formData.get('city'),
+        document_number: formData.get('document_number'),
+      })
+      .eq('id', user.id);
+    
+    if (updateError) {
+      error = 'Error al actualizar el perfil';
+    } else {
+      success = 'Perfil actualizado correctamente';
+      // Refresh profile data
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      profile = data;
+    }
+  } else {
+    success = 'Perfil actualizado (Modo Demo)';
+  }
+}
+---
+
+<PublicLayout title="Mi Cuenta | FashionStore">
+  <div class="min-h-screen bg-gradient-to-b from-primary-50 via-white to-primary-50/50">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+      <!-- Breadcrumb -->
+      <nav class="text-sm text-primary-600 mb-8 flex items-center gap-2 animate-slide-down">
+        <a href="/" class="hover:text-primary-900 transition-colors">Inicio</a>
+        <span class="text-primary-300">/</span>
+        <span class="text-primary-900 font-semibold">Mi Cuenta</span>
+      </nav>
+
+      <!-- Welcome Header -->
+      <div class="mb-12 bg-gradient-to-r from-primary-50 to-secondary-50 rounded-3xl p-8 border-2 border-primary-200/50 animate-slide-down">
+        <div class="flex items-center gap-4 mb-4">
+          <div class="w-20 h-20 rounded-full bg-gradient-to-br from-primary-600 to-primary-700 flex items-center justify-center text-white shadow-lg">
+            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-3xl lg:text-4xl font-serif font-bold text-primary-950">
+              ¡Bienvenido de vuelta!
+            </h1>
+            {profile?.username && (
+              <p class="text-primary-700 mt-1">
+                <span class="font-semibold">@{profile.username}</span> • {profile.email}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {success && (
+        <div class="mb-6 p-4 bg-success-50 border-l-4 border-success-600 rounded-xl text-success-700 font-medium animate-slide-down flex items-center gap-3">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+          </svg>
+          {success}
+        </div>
+      )}
+
+      {error && (
+        <div class="mb-6 p-4 bg-danger-50 border-l-4 border-danger-600 rounded-xl text-danger-700 font-medium animate-slide-down flex items-center gap-3">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+          {error}
+        </div>
+      )}
+      
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <!-- Sidebar Navigation -->
+        <div class="lg:col-span-1">
+          <nav class="bg-white rounded-2xl shadow-md border-2 border-primary-200/50 overflow-hidden sticky top-24 animate-scale-in">
+            <a href="/cuenta" class="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-primary-50 to-primary-100/50 text-primary-900 font-semibold border-l-4 border-primary-600 transition-all">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Mi Perfil
+            </a>
+
+            <a href="/cuenta/pedidos" class="flex items-center gap-3 px-6 py-4 text-primary-700 hover:bg-primary-50 border-l-4 border-transparent hover:border-primary-300 transition-all font-medium">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m0 0l8-4m0 0l8 4m-8 4v10l-8-4m0 0v10l8 4m0-10l8-4" />
+              </svg>
+              Mis Pedidos
+            </a>
+
+            <a href="/cuenta/direcciones" class="flex items-center gap-3 px-6 py-4 text-primary-700 hover:bg-primary-50 border-l-4 border-transparent hover:border-primary-300 transition-all font-medium">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Direcciones
+            </a>
+
+            <a href="/cuenta/seguridad" class="flex items-center gap-3 px-6 py-4 text-primary-700 hover:bg-primary-50 border-l-4 border-transparent hover:border-primary-300 transition-all font-medium">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              Seguridad
+            </a>
+
+            <hr class="border-primary-200/50" />
+
+            <form action="/api/auth/customer-logout" method="POST" class="block w-full">
+              <button type="submit" class="w-full flex items-center gap-3 px-6 py-4 text-danger-600 hover:bg-danger-50 border-l-4 border-transparent hover:border-danger-300 transition-all font-medium">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Cerrar Sesión
+              </button>
+            </form>
+          </nav>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="lg:col-span-3 space-y-6">
+          <form method="POST" class="space-y-6">
+            <!-- Account Information Section -->
+            <div class="bg-white rounded-2xl shadow-md border-2 border-primary-200/50 overflow-hidden animate-slide-up">
+              <div class="bg-gradient-to-r from-primary-50 to-primary-100/50 px-8 py-6 border-b-2 border-primary-200/50">
+                <h2 class="text-2xl font-serif font-bold text-primary-950 flex items-center gap-3">
+                  <svg class="w-6 h-6 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v2h8v-2zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-2a4 4 0 00-8 0v2h8z" />
+                  </svg>
+                  Información de la Cuenta
+                </h2>
+              </div>
+
+              <div class="p-8 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label class="block text-sm font-semibold text-primary-900 mb-3">
+                      Usuario
+                    </label>
+                    <input 
+                      type="text" 
+                      value={profile?.username || ''}
+                      disabled
+                      class="w-full px-4 py-3 rounded-xl border-2 border-primary-200/50 bg-primary-50 text-primary-600 font-medium cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-semibold text-primary-900 mb-3">
+                      Email
+                    </label>
+                    <input 
+                      type="email" 
+                      value={profile?.email || user?.email || ''}
+                      disabled
+                      class="w-full px-4 py-3 rounded-xl border-2 border-primary-200/50 bg-primary-50 text-primary-600 font-medium cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Personal Information Section -->
+            <div class="bg-white rounded-2xl shadow-md border-2 border-primary-200/50 overflow-hidden animate-slide-up" style="animation-delay: 100ms">
+              <div class="bg-gradient-to-r from-primary-50 to-primary-100/50 px-8 py-6 border-b-2 border-primary-200/50">
+                <h2 class="text-2xl font-serif font-bold text-primary-950 flex items-center gap-3">
+                  <svg class="w-6 h-6 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                  </svg>
+                  Datos Personales
+                </h2>
+              </div>
+
+              <div class="p-8 space-y-6">
+                <div>
+                  <label for="full_name" class="block text-sm font-semibold text-primary-900 mb-3">
+                    Nombre Completo
+                  </label>
+                  <input 
+                    type="text" 
+                    id="full_name" 
+                    name="full_name"
+                    placeholder="Tu nombre completo"
+                    value={profile?.full_name || ''}
+                    class="w-full px-4 py-3 rounded-xl border-2 border-primary-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-300/50 outline-none transition-all"
+                  />
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label for="phone" class="block text-sm font-semibold text-primary-900 mb-3">
+                      Teléfono
+                    </label>
+                    <input 
+                      type="tel" 
+                      id="phone" 
+                      name="phone"
+                      placeholder="+34 600 00 00 00"
+                      value={profile?.phone || ''}
+                      class="w-full px-4 py-3 rounded-xl border-2 border-primary-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-300/50 outline-none transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label for="document_number" class="block text-sm font-semibold text-primary-900 mb-3">
+                      DNI/NIE
+                    </label>
+                    <input 
+                      type="text" 
+                      id="document_number" 
+                      name="document_number"
+                      placeholder="12345678X"
+                      value={profile?.document_number || ''}
+                      class="w-full px-4 py-3 rounded-xl border-2 border-primary-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-300/50 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Address Section -->
+            <div class="bg-white rounded-2xl shadow-md border-2 border-primary-200/50 overflow-hidden animate-slide-up" style="animation-delay: 200ms">
+              <div class="bg-gradient-to-r from-primary-50 to-primary-100/50 px-8 py-6 border-b-2 border-primary-200/50">
+                <h2 class="text-2xl font-serif font-bold text-primary-950 flex items-center gap-3">
+                  <svg class="w-6 h-6 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                  </svg>
+                  Dirección de Envío
+                </h2>
+              </div>
+
+              <div class="p-8 space-y-6">
+                <div>
+                  <label for="address" class="block text-sm font-semibold text-primary-900 mb-3">
+                    Dirección
+                  </label>
+                  <input 
+                    type="text" 
+                    id="address" 
+                    name="address"
+                    placeholder="Calle y número"
+                    value={profile?.address || ''}
+                    class="w-full px-4 py-3 rounded-xl border-2 border-primary-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-300/50 outline-none transition-all"
+                  />
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label for="postal_code" class="block text-sm font-semibold text-primary-900 mb-3">
+                      Código Postal
+                    </label>
+                    <input 
+                      type="text" 
+                      id="postal_code" 
+                      name="postal_code"
+                      placeholder="28001"
+                      value={profile?.postal_code || ''}
+                      class="w-full px-4 py-3 rounded-xl border-2 border-primary-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-300/50 outline-none transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label for="city" class="block text-sm font-semibold text-primary-900 mb-3">
+                      Ciudad
+                    </label>
+                    <input 
+                      type="text" 
+                      id="city" 
+                      name="city"
+                      placeholder="Madrid"
+                      value={profile?.city || ''}
+                      class="w-full px-4 py-3 rounded-xl border-2 border-primary-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-300/50 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
+                <!-- Link to manage addresses -->
+                <div class="pt-4 border-t-2 border-primary-200/50">
+                  <a href="/cuenta/direcciones" class="inline-flex items-center gap-2 text-primary-600 hover:text-primary-900 font-medium transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Gestionar todas mis direcciones
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex justify-end">
+              <Button type="submit" variant="secondary" size="lg" class="group shadow-lg hover:shadow-xl transition-all">
+                <span class="flex items-center gap-2">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.3A4.5 4.5 0 1113.5 13H11V9.413l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13H5.5z" />
+                  </svg>
+                  Guardar Cambios
+                </span>
+              </Button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</PublicLayout>
+
+<script is:inline define:vars={{ profile }}>
+  if (profile) {
+    const userData = {
+      username: profile.username || profile.email?.split('@')[0] || 'Usuario',
+      email: profile.email,
+      loggedInAt: new Date().toISOString()
+    };
+    localStorage.setItem('fashionstore-user', JSON.stringify(userData));
+    
+    // Update Header UI immediately
+    const userMenuText = document.getElementById('user-menu-text');
+    const guestMenu = document.getElementById('guest-menu');
+    const loggedInMenu = document.getElementById('logged-in-menu');
+    const adminLink = document.getElementById('admin-link');
+    const ADMIN_EMAILS = ['hugodelmoral77@gmail.com', 'admin@fashionstore.com'];
+
+    if (userMenuText) {
+      userMenuText.textContent = userData.username;
+      userMenuText.classList.remove('invisible');
+    }
+    if (guestMenu) guestMenu.classList.add('hidden');
+    if (loggedInMenu) loggedInMenu.classList.remove('hidden');
+    
+    if (adminLink && userData.email && ADMIN_EMAILS.includes(userData.email)) {
+       adminLink.classList.remove('hidden');
+    }
+  }
+</script>
+
+<script>
+  // Clear localStorage on logout form submit
+  document.querySelector('form[action="/api/auth/customer-logout"]')?.addEventListener('submit', () => {
+    localStorage.removeItem('fashionstore-user');
+  });
+</script>

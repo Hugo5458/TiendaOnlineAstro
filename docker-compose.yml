@@ -1,0 +1,75 @@
+version: '3.8'
+
+<<<<<<< HEAD
+=======
+# FashionStore - Docker Compose para Coolify
+# Este archivo puede usarse tanto localmente como en Coolify
+
+>>>>>>> 290b5f2fa892799bda82ecf1e2975f11eeeb97a8
+services:
+  fashionstore:
+    build:
+      context: .
+      dockerfile: Dockerfile
+<<<<<<< HEAD
+    container_name: fashionstore
+    restart: unless-stopped
+    ports:
+      - "4321:4321"
+    environment:
+      - NODE_ENV=production
+      - HOST=0.0.0.0
+      - PORT=4321
+      - PUBLIC_SUPABASE_URL=${PUBLIC_SUPABASE_URL}
+      - PUBLIC_SUPABASE_ANON_KEY=${PUBLIC_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - PUBLIC_STRIPE_PUBLISHABLE_KEY=${PUBLIC_STRIPE_PUBLISHABLE_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+=======
+      args:
+        # Variables necesarias durante el build
+        PUBLIC_SUPABASE_URL: ${PUBLIC_SUPABASE_URL}
+        PUBLIC_SUPABASE_ANON_KEY: ${PUBLIC_SUPABASE_ANON_KEY}
+        PUBLIC_STRIPE_PUBLISHABLE_KEY: ${PUBLIC_STRIPE_PUBLISHABLE_KEY}
+        PUBLIC_SITE_URL: ${PUBLIC_SITE_URL}
+    container_name: fashionstore
+    restart: unless-stopped
+    ports:
+      - "${PORT:-4321}:4321"
+    environment:
+      # Runtime environment variables
+      - NODE_ENV=production
+      - HOST=0.0.0.0
+      - PORT=4321
+      # Supabase
+      - PUBLIC_SUPABASE_URL=${PUBLIC_SUPABASE_URL}
+      - PUBLIC_SUPABASE_ANON_KEY=${PUBLIC_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      # Stripe
+      - PUBLIC_STRIPE_PUBLISHABLE_KEY=${PUBLIC_STRIPE_PUBLISHABLE_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      # App
+>>>>>>> 290b5f2fa892799bda82ecf1e2975f11eeeb97a8
+      - PUBLIC_SITE_URL=${PUBLIC_SITE_URL}
+    networks:
+      - fashionstore-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:4321"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+<<<<<<< HEAD
+=======
+    labels:
+      # Labels para Coolify/Traefik (si aplica)
+      - "traefik.enable=true"
+      - "traefik.http.routers.fashionstore.rule=Host(`${DOMAIN:-localhost}`)"
+      - "traefik.http.services.fashionstore.loadbalancer.server.port=4321"
+>>>>>>> 290b5f2fa892799bda82ecf1e2975f11eeeb97a8
+
+networks:
+  fashionstore-network:
+    driver: bridge

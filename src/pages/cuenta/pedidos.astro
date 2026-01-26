@@ -1,0 +1,599 @@
+---
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import Button from '../../components/ui/Button.astro';
+import { supabase, isSupabaseConfigured, createServerClient } from '../../lib/supabase';
+
+export const prerender = false;
+
+const authToken = Astro.cookies.get('sb-access-token')?.value;
+if (!authToken && isSupabaseConfigured()) {
+  return Astro.redirect('/login?redirect=/cuenta/pedidos');
+}
+
+// Get user's orders
+let orders: any[] = [];
+let userEmail = '';
+
+if (isSupabaseConfigured() && authToken) {
+  const { data: { user } } = await supabase.auth.getUser(authToken);
+  userEmail = user?.email || '';
+  
+  if (userEmail) {
+    const serverClient = createServerClient();
+    const { data, error } = await serverClient
+      .from('orders')
+      .select('*, order_items(*)')
+      .eq('customer_email', userEmail)
+      .order('created_at', { ascending: false });
+    
+    if (!error && data) {
+      orders = data;
+    }
+  }
+} else {
+  // Demo orders
+  orders = [
+    {
+      id: 'demo-order-1',
+      order_number: 'ORD-2026-001',
+      customer_email: 'demo@example.com',
+      status: 'delivered',
+      total: 15900,
+      created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+      order_items: [
+        { product_name: 'Camisa Oxford Azul', quantity: 1, unit_price: 5900 },
+        { product_name: 'Pantalón Chino', quantity: 1, unit_price: 6900 }
+      ]
+    },
+    {
+      id: 'demo-order-2',
+      order_number: 'ORD-2026-002',
+      customer_email: 'demo@example.com',
+      status: 'paid',
+      total: 8900,
+      created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      order_items: [
+        { product_name: 'Vestido Midi Floral', quantity: 1, unit_price: 8900 }
+      ]
+    },
+    {
+      id: 'demo-order-3',
+      order_number: 'ORD-2026-003',
+      customer_email: 'demo@example.com',
+      status: 'shipped',
+      total: 29900,
+      created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+      order_items: [
+        { product_name: 'Traje Azul Marino', quantity: 1, unit_price: 29900 }
+      ]
+    }
+  ];
+}
+
+// Status configuration
+const statusConfig: Record<string, { label: string; color: string; icon: string; bgColor: string }> = {
+  pending: { 
+    label: 'Pendiente', 
+    color: 'text-amber-700', 
+    bgColor: 'bg-amber-50 border-amber-200',
+    icon: '⏳' 
+  },
+  paid: { 
+    label: 'Pagado', 
+    color: 'text-blue-700', 
+    bgColor: 'bg-blue-50 border-blue-200',
+    icon: '💳' 
+  },
+  processing: { 
+    label: 'Procesando', 
+    color: 'text-indigo-700', 
+    bgColor: 'bg-indigo-50 border-indigo-200',
+    icon: '📋' 
+  },
+  shipped: { 
+    label: 'Enviado', 
+    color: 'text-purple-700', 
+    bgColor: 'bg-purple-50 border-purple-200',
+    icon: '🚚' 
+  },
+  delivered: { 
+    label: 'Entregado', 
+    color: 'text-success-700', 
+    bgColor: 'bg-success-50 border-success-200',
+    icon: '✅' 
+  },
+  cancelled: { 
+    label: 'Cancelado', 
+    color: 'text-danger-700', 
+    bgColor: 'bg-danger-50 border-danger-200',
+    icon: '❌' 
+  },
+  refunded: { 
+    label: 'Reembolsado', 
+    color: 'text-gray-700', 
+    bgColor: 'bg-gray-50 border-gray-200',
+    icon: '↩️' 
+  }
+};
+
+function getStatusConfig(status: string) {
+  return statusConfig[status] || statusConfig.pending;
+}
+
+function canCancel(status: string): boolean {
+  return ['pending', 'paid'].includes(status);
+}
+
+function canRequestReturn(status: string): boolean {
+  return status === 'delivered';
+}
+---
+
+<PublicLayout title="Mis Pedidos | FashionStore">
+  <div class="min-h-screen bg-gradient-to-b from-primary-50 via-white to-primary-50/50">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+      <!-- Breadcrumb -->
+      <nav class="text-sm text-primary-600 mb-8 flex items-center gap-2 animate-slide-down">
+        <a href="/" class="hover:text-primary-900 transition-colors">Inicio</a>
+        <span class="text-primary-300">/</span>
+        <a href="/cuenta" class="hover:text-primary-900 transition-colors">Mi Cuenta</a>
+        <span class="text-primary-300">/</span>
+        <span class="text-primary-900 font-semibold">Mis Pedidos</span>
+      </nav>
+
+      <!-- Header -->
+      <div class="mb-12 animate-slide-down">
+        <div class="flex items-center gap-4 mb-4">
+          <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white shadow-lg">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-4xl lg:text-5xl font-serif font-bold text-primary-950">Mis Pedidos</h1>
+            <p class="text-primary-700 text-lg mt-1">Historial completo de tus compras</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Legend -->
+      <div class="mb-8 p-6 bg-white rounded-2xl shadow-md border border-primary-200/50 animate-slide-up">
+        <h3 class="text-sm font-semibold text-primary-900 mb-4">Estados de pedido:</h3>
+        <div class="flex flex-wrap gap-3">
+          {Object.entries(statusConfig).map(([key, config]) => (
+            <span class={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border ${config.bgColor} ${config.color}`}>
+              <span>{config.icon}</span>
+              {config.label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {orders.length === 0 ? (
+        <div class="max-w-md mx-auto text-center py-20 animate-slide-up">
+          <div class="w-32 h-32 rounded-full bg-gradient-to-br from-primary-100 to-primary-50 flex items-center justify-center mx-auto mb-8 shadow-lg">
+            <span class="text-6xl">📦</span>
+          </div>
+          <h2 class="text-3xl font-serif font-bold text-primary-950 mb-3">Sin pedidos aún</h2>
+          <p class="text-primary-700 mb-8 text-lg">Realiza tu primera compra para ver el historial aquí.</p>
+          <Button href="/productos" variant="secondary" size="lg" class="shadow-lg">
+            Explorar tienda
+          </Button>
+        </div>
+      ) : (
+        <div class="space-y-6">
+          {orders.map((order, idx) => {
+            const status = getStatusConfig(order.status);
+            const showCancel = canCancel(order.status);
+            const showReturn = canRequestReturn(order.status);
+            
+            return (
+              <div 
+                class="bg-white rounded-2xl shadow-md border-2 border-primary-200/50 overflow-hidden hover:shadow-elegant transition-all animate-slide-up"
+                style={`animation-delay: ${idx * 100}ms`}
+              >
+                <!-- Order Header -->
+                <div class="bg-gradient-to-r from-primary-50 to-primary-100/50 px-6 py-4 border-b border-primary-200/50">
+                  <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                      <span class="text-2xl">{status.icon}</span>
+                      <div>
+                        <h3 class="font-bold text-primary-950">
+                          Pedido #{order.order_number || order.id.slice(0, 8).toUpperCase()}
+                        </h3>
+                        <p class="text-sm text-primary-600">
+                          {new Date(order.created_at).toLocaleDateString('es-ES', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <!-- Status Badge -->
+                    <div class={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border ${status.bgColor} ${status.color}`}>
+                      <span>{status.icon}</span>
+                      {status.label}
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Order Items -->
+                <div class="p-6">
+                  <div class="space-y-3 mb-6">
+                    {order.order_items?.map((item: any) => (
+                      <div class="flex items-center justify-between py-3 border-b border-primary-100 last:border-0">
+                        <div class="flex items-center gap-4">
+                          <div class="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
+                            <span class="text-xl">👕</span>
+                          </div>
+                          <div>
+                            <p class="font-medium text-primary-900">{item.product_name}</p>
+                            <p class="text-sm text-primary-600">Cantidad: {item.quantity}</p>
+                          </div>
+                        </div>
+                        <p class="font-semibold text-primary-900">
+                          €{((item.unit_price * item.quantity) / 100).toFixed(2)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <!-- Order Total & Actions -->
+                  <div class="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-primary-200">
+                    <div class="flex items-baseline gap-2">
+                      <span class="text-primary-700">Total:</span>
+                      <span class="text-2xl font-bold text-primary-950">
+                        €{((order.total || 0) / 100).toFixed(2)}
+                      </span>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-3">
+                      <!-- Cancel Button (only for pending/paid orders) -->
+                      {showCancel && (
+                        <button 
+                          class="cancel-order-btn px-5 py-2.5 bg-danger-50 hover:bg-danger-100 text-danger-700 font-semibold rounded-xl border border-danger-200 transition-all hover:scale-105 flex items-center gap-2"
+                          data-order-id={order.id}
+                          data-order-number={order.order_number || order.id.slice(0, 8)}
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          Cancelar Pedido
+                        </button>
+                      )}
+                      
+                      <!-- Return Button (only for delivered orders) -->
+                      {showReturn && (
+                        <button 
+                          class="return-order-btn px-5 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold rounded-xl border border-amber-200 transition-all hover:scale-105 flex items-center gap-2"
+                          data-order-id={order.id}
+                          data-order-number={order.order_number || order.id.slice(0, 8)}
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                          </svg>
+                          Solicitar Devolución
+                        </button>
+                      )}
+                      
+                      <!-- View Details (always available) -->
+                      <a 
+                        href={`/cuenta/pedido/${order.id}`}
+                        class="px-5 py-2.5 bg-primary-100 hover:bg-primary-200 text-primary-700 font-semibold rounded-xl transition-all hover:scale-105 flex items-center gap-2"
+                      >
+                        Ver Detalles
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <!-- Back Link -->
+      <div class="mt-12">
+        <a href="/cuenta" class="inline-flex items-center gap-2 text-primary-600 hover:text-primary-900 font-medium transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          Volver a Mi Cuenta
+        </a>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Cancel Order Modal -->
+  <div id="cancel-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="cancel-backdrop"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 animate-scale-in">
+        <div class="text-center mb-6">
+          <div class="w-16 h-16 rounded-full bg-danger-100 flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-danger-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h3 class="text-2xl font-serif font-bold text-primary-950 mb-2">¿Cancelar pedido?</h3>
+          <p class="text-primary-700" id="cancel-modal-text">
+            ¿Estás seguro de que deseas cancelar el pedido #<span id="cancel-order-number"></span>?
+          </p>
+        </div>
+        
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+          <p class="text-sm text-amber-800">
+            <strong>⚠️ Importante:</strong> Esta acción es irreversible. El stock de los productos será restaurado automáticamente.
+          </p>
+        </div>
+        
+        <div class="flex gap-3">
+          <button id="cancel-modal-close" class="flex-1 px-5 py-3 bg-primary-100 hover:bg-primary-200 text-primary-700 font-semibold rounded-xl transition-all">
+            No, mantener
+          </button>
+          <button id="cancel-modal-confirm" class="flex-1 px-5 py-3 bg-danger-600 hover:bg-danger-700 text-white font-semibold rounded-xl transition-all">
+            Sí, cancelar
+          </button>
+        </div>
+        
+        <p id="cancel-modal-error" class="hidden mt-4 text-center text-danger-600 font-medium"></p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Return Request Modal -->
+  <div id="return-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="return-backdrop"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4 overflow-y-auto">
+      <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full my-8 animate-scale-in">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-amber-500 to-orange-500 px-8 py-6 text-white rounded-t-2xl">
+          <h3 class="text-2xl font-serif font-bold mb-1">Solicitar Devolución</h3>
+          <p class="text-amber-100">Pedido #<span id="return-order-number"></span></p>
+        </div>
+        
+        <div class="p-8">
+          <!-- Step 1: Instructions -->
+          <div class="mb-6">
+            <div class="flex items-start gap-4 mb-4">
+              <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <span class="text-lg font-bold text-amber-600">1</span>
+              </div>
+              <div>
+                <h4 class="font-bold text-primary-950 mb-1">Instrucciones de Envío</h4>
+                <p class="text-primary-700 text-sm leading-relaxed">
+                  Debes enviar los artículos en su embalaje original a:
+                </p>
+                <div class="mt-2 bg-primary-50 border border-primary-200 rounded-xl p-4">
+                  <p class="font-semibold text-primary-900">📍 Calle de la Moda 123</p>
+                  <p class="text-primary-700">Polígono Industrial, 28001</p>
+                  <p class="text-primary-700">Madrid, España</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Step 2: Email Confirmation -->
+          <div class="mb-6">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <span class="text-lg font-bold text-amber-600">2</span>
+              </div>
+              <div>
+                <h4 class="font-bold text-primary-950 mb-1">Confirmación por Email</h4>
+                <p class="text-primary-700 text-sm leading-relaxed">
+                  Hemos enviado un correo con la <strong>etiqueta de devolución</strong> a tu email asociado.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Step 3: Refund Info -->
+          <div class="mb-8">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <span class="text-lg font-bold text-amber-600">3</span>
+              </div>
+              <div>
+                <h4 class="font-bold text-primary-950 mb-1">Reembolso</h4>
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-2">
+                  <p class="text-blue-800 text-sm leading-relaxed">
+                    <strong>💰 Aviso Importante:</strong> Una vez recibido y validado el paquete, 
+                    el reembolso se procesará en tu método de pago original en un plazo de 
+                    <strong>5 a 7 días hábiles</strong>.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Reason (optional) -->
+          <div class="mb-6">
+            <label class="block text-sm font-semibold text-primary-900 mb-2">
+              Motivo de la devolución (opcional)
+            </label>
+            <textarea 
+              id="return-reason" 
+              class="w-full px-4 py-3 rounded-xl border-2 border-primary-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none transition-all resize-none"
+              rows="3"
+              placeholder="Cuéntanos por qué deseas devolver el producto..."
+            ></textarea>
+          </div>
+          
+          <!-- Actions -->
+          <div class="flex gap-3">
+            <button id="return-modal-close" class="flex-1 px-5 py-3 bg-primary-100 hover:bg-primary-200 text-primary-700 font-semibold rounded-xl transition-all">
+              Cancelar
+            </button>
+            <button id="return-modal-confirm" class="flex-1 px-5 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl transition-all">
+              Confirmar Solicitud
+            </button>
+          </div>
+          
+          <p id="return-modal-error" class="hidden mt-4 text-center text-danger-600 font-medium"></p>
+          <p id="return-modal-success" class="hidden mt-4 text-center text-success-600 font-medium"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</PublicLayout>
+
+<script>
+  // Cancel Order Modal Logic
+  const cancelModal = document.getElementById('cancel-modal');
+  const cancelBackdrop = document.getElementById('cancel-backdrop');
+  const cancelModalClose = document.getElementById('cancel-modal-close');
+  const cancelModalConfirm = document.getElementById('cancel-modal-confirm');
+  const cancelOrderNumber = document.getElementById('cancel-order-number');
+  const cancelModalError = document.getElementById('cancel-modal-error');
+  
+  let currentCancelOrderId: string | null = null;
+  
+  // Open cancel modal
+  document.querySelectorAll('.cancel-order-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const target = e.currentTarget as HTMLElement;
+      currentCancelOrderId = target.dataset.orderId || null;
+      const orderNum = target.dataset.orderNumber || '';
+      
+      if (cancelOrderNumber) cancelOrderNumber.textContent = orderNum;
+      cancelModal?.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    });
+  });
+  
+  // Close cancel modal
+  function closeCancelModal() {
+    cancelModal?.classList.add('hidden');
+    document.body.style.overflow = '';
+    currentCancelOrderId = null;
+    cancelModalError?.classList.add('hidden');
+  }
+  
+  cancelModalClose?.addEventListener('click', closeCancelModal);
+  cancelBackdrop?.addEventListener('click', closeCancelModal);
+  
+  // Confirm cancellation
+  cancelModalConfirm?.addEventListener('click', async () => {
+    if (!currentCancelOrderId) return;
+    
+    const btn = cancelModalConfirm as HTMLButtonElement;
+    btn.disabled = true;
+    btn.textContent = 'Cancelando...';
+    cancelModalError?.classList.add('hidden');
+    
+    try {
+      const response = await fetch('/api/orders/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: currentCancelOrderId })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Reload page to show updated status
+        window.location.reload();
+      } else {
+        throw new Error(data.error || 'Error al cancelar');
+      }
+    } catch (error: any) {
+      cancelModalError!.textContent = error.message;
+      cancelModalError?.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Sí, cancelar';
+    }
+  });
+  
+  // Return Order Modal Logic
+  const returnModal = document.getElementById('return-modal');
+  const returnBackdrop = document.getElementById('return-backdrop');
+  const returnModalClose = document.getElementById('return-modal-close');
+  const returnModalConfirm = document.getElementById('return-modal-confirm');
+  const returnOrderNumber = document.getElementById('return-order-number');
+  const returnReason = document.getElementById('return-reason') as HTMLTextAreaElement;
+  const returnModalError = document.getElementById('return-modal-error');
+  const returnModalSuccess = document.getElementById('return-modal-success');
+  
+  let currentReturnOrderId: string | null = null;
+  
+  // Open return modal
+  document.querySelectorAll('.return-order-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const target = e.currentTarget as HTMLElement;
+      currentReturnOrderId = target.dataset.orderId || null;
+      const orderNum = target.dataset.orderNumber || '';
+      
+      if (returnOrderNumber) returnOrderNumber.textContent = orderNum;
+      returnModal?.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    });
+  });
+  
+  // Close return modal
+  function closeReturnModal() {
+    returnModal?.classList.add('hidden');
+    document.body.style.overflow = '';
+    currentReturnOrderId = null;
+    returnModalError?.classList.add('hidden');
+    returnModalSuccess?.classList.add('hidden');
+    if (returnReason) returnReason.value = '';
+  }
+  
+  returnModalClose?.addEventListener('click', closeReturnModal);
+  returnBackdrop?.addEventListener('click', closeReturnModal);
+  
+  // Confirm return request
+  returnModalConfirm?.addEventListener('click', async () => {
+    if (!currentReturnOrderId) return;
+    
+    const btn = returnModalConfirm as HTMLButtonElement;
+    btn.disabled = true;
+    btn.textContent = 'Procesando...';
+    returnModalError?.classList.add('hidden');
+    
+    try {
+      const response = await fetch('/api/orders/return-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          orderId: currentReturnOrderId,
+          reason: returnReason?.value || ''
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        returnModalSuccess!.textContent = '✅ Solicitud de devolución registrada correctamente';
+        returnModalSuccess?.classList.remove('hidden');
+        btn.textContent = 'Solicitud enviada';
+        
+        // Close modal after 2 seconds
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        throw new Error(data.error || 'Error al procesar');
+      }
+    } catch (error: any) {
+      returnModalError!.textContent = error.message;
+      returnModalError?.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Confirmar Solicitud';
+    }
+  });
+  
+  // Escape key to close modals
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (!cancelModal?.classList.contains('hidden')) closeCancelModal();
+      if (!returnModal?.classList.contains('hidden')) closeReturnModal();
+    }
+  });
+</script>

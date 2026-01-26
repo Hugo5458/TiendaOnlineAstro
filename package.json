@@ -1,0 +1,33 @@
+{
+  "name": "fashionstore",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "FashionStore - E-commerce de Moda Premium",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "start": "node ./dist/server/entry.mjs",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.6",
+    "@astrojs/node": "^9.5.1",
+    "@astrojs/react": "^4.4.2",
+    "@astrojs/tailwind": "^6.0.2",
+    "@nanostores/react": "^1.0.0",
+    "@supabase/supabase-js": "^2.90.0",
+    "astro": "^5.10.1",
+    "nanostores": "^1.1.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "stripe": "^20.1.2",
+    "nodemailer": "^6.9.4",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0"
+  }
+}

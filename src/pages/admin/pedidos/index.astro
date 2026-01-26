@@ -1,0 +1,173 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import Button from '../../../components/ui/Button.astro';
+import { supabase, type Order } from '../../../lib/supabase';
+import { formatPrice } from '../../../lib/utils';
+
+export const prerender = false; // SSR
+
+const { data: orders } = await supabase
+  .from('orders')
+  .select('*')
+  .order('created_at', { ascending: false });
+
+const allOrders = (orders || []) as Order[];
+
+// URL params
+const url = Astro.url;
+const statusFilter = url.searchParams.get('estado');
+const searchQuery = url.searchParams.get('buscar')?.toLowerCase();
+
+let filteredOrders = allOrders;
+
+if (statusFilter) {
+  filteredOrders = filteredOrders.filter(o => o.status === statusFilter);
+}
+
+if (searchQuery) {
+  filteredOrders = filteredOrders.filter(o =>
+    o.order_number?.toLowerCase().includes(searchQuery) ||
+    o.customer_email?.toLowerCase().includes(searchQuery) ||
+    o.customer_name?.toLowerCase().includes(searchQuery)
+  );
+}
+
+const statusLabel = (status: string) => {
+  switch (status) {
+    case 'pending': return 'Pendiente';
+    case 'paid': return 'Pagado';
+    case 'processing': return 'Procesando';
+    case 'shipped': return 'Enviado';
+    case 'delivered': return 'Entregado';
+    case 'cancelled': return 'Cancelado';
+    case 'refunded': return 'Reembolsado';
+    default: return status;
+  }
+};
+
+const statusBadge = (status: string) => {
+  switch (status) {
+    case 'paid':
+      return 'bg-green-100 text-green-700';
+    case 'processing':
+      return 'bg-blue-100 text-blue-700';
+    case 'shipped':
+      return 'bg-purple-100 text-purple-700';
+    case 'delivered':
+      return 'bg-emerald-100 text-emerald-700';
+    case 'cancelled':
+    case 'refunded':
+      return 'bg-red-100 text-red-700';
+    case 'pending':
+    default:
+      return 'bg-amber-100 text-amber-700';
+  }
+};
+---
+
+<AdminLayout title="Pedidos">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div>
+      <h2 class="text-lg text-charcoal-600">
+        {filteredOrders.length} pedidos
+      </h2>
+    </div>
+    <Button href="/admin" variant="outline">
+      Volver al dashboard
+    </Button>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm border border-charcoal-100 p-4 mb-6">
+    <form class="flex flex-col lg:flex-row gap-4">
+      <div class="flex-1">
+        <input
+          type="text"
+          name="buscar"
+          value={searchQuery || ''}
+          placeholder="Buscar por nº pedido, email o nombre..."
+          class="w-full px-4 py-2 rounded-lg border border-charcoal-200 focus:border-navy-500 focus:ring-2 focus:ring-navy-500/20 outline-none"
+        />
+      </div>
+
+      <select
+        name="estado"
+        class="px-4 py-2 rounded-lg border border-charcoal-200 bg-white focus:border-navy-500 focus:ring-2 focus:ring-navy-500/20 outline-none"
+      >
+        <option value="" selected={!statusFilter}>Todos los estados</option>
+        <option value="pending" selected={statusFilter === 'pending'}>Pendiente</option>
+        <option value="paid" selected={statusFilter === 'paid'}>Pagado</option>
+        <option value="processing" selected={statusFilter === 'processing'}>Procesando</option>
+        <option value="shipped" selected={statusFilter === 'shipped'}>Enviado</option>
+        <option value="delivered" selected={statusFilter === 'delivered'}>Entregado</option>
+        <option value="cancelled" selected={statusFilter === 'cancelled'}>Cancelado</option>
+        <option value="refunded" selected={statusFilter === 'refunded'}>Reembolsado</option>
+      </select>
+
+      <Button type="submit" variant="outline">
+        Filtrar
+      </Button>
+    </form>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm border border-charcoal-100 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-charcoal-50 border-b border-charcoal-100">
+          <tr>
+            <th class="text-left px-6 py-4 text-sm font-semibold text-charcoal-700">Pedido</th>
+            <th class="text-left px-6 py-4 text-sm font-semibold text-charcoal-700">Cliente</th>
+            <th class="text-left px-6 py-4 text-sm font-semibold text-charcoal-700">Total</th>
+            <th class="text-left px-6 py-4 text-sm font-semibold text-charcoal-700">Estado</th>
+            <th class="text-left px-6 py-4 text-sm font-semibold text-charcoal-700">Pago</th>
+            <th class="text-right px-6 py-4 text-sm font-semibold text-charcoal-700">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-charcoal-100">
+          {filteredOrders.length > 0 ? (
+            filteredOrders.map((order) => (
+              <tr class="hover:bg-charcoal-50 transition-colors">
+                <td class="px-6 py-4">
+                  <div>
+                    <p class="font-medium text-navy-900">{order.order_number || order.id}</p>
+                    <p class="text-sm text-charcoal-500">{new Date(order.created_at).toLocaleString('es-ES')}</p>
+                  </div>
+                </td>
+                <td class="px-6 py-4">
+                  <div>
+                    <p class="font-medium text-navy-900">{order.customer_name}</p>
+                    <p class="text-sm text-charcoal-500">{order.customer_email}</p>
+                  </div>
+                </td>
+                <td class="px-6 py-4">
+                  <span class="font-medium text-navy-900">{formatPrice(order.total)}</span>
+                </td>
+                <td class="px-6 py-4">
+                  <span class={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusBadge(order.status)}`}>
+                    {statusLabel(order.status)}
+                  </span>
+                </td>
+                <td class="px-6 py-4">
+                  <span class="text-sm text-charcoal-600">{order.payment_status || '-'}</span>
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <a
+                    href={`/admin/pedidos/${order.id}`}
+                    class="inline-flex items-center px-3 py-2 rounded-lg border border-charcoal-200 text-charcoal-700 hover:bg-charcoal-50 transition-colors text-sm"
+                  >
+                    Ver
+                  </a>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colspan="6" class="px-6 py-12 text-center text-charcoal-500">
+                No hay pedidos
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</AdminLayout>

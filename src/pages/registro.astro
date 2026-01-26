@@ -1,0 +1,450 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Button from '../components/ui/Button.astro';
+
+export const prerender = false;
+
+// Check if already logged in
+const accessToken = Astro.cookies.get('sb-access-token')?.value;
+if (accessToken) {
+  return Astro.redirect('/cuenta');
+}
+
+let error = '';
+let success = false;
+
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  const username = formData.get('username') as string;
+  const email = formData.get('email') as string;
+  const password = formData.get('password') as string;
+  const confirmPassword = formData.get('confirm_password') as string;
+  const fullName = formData.get('full_name') as string;
+  const phone = formData.get('phone') as string;
+  const address = formData.get('address') as string;
+  const postalCode = formData.get('postal_code') as string;
+  const city = formData.get('city') as string;
+  const documentNumber = formData.get('document_number') as string;
+  
+  // Validations
+  if (password !== confirmPassword) {
+    error = 'Las contraseñas no coinciden';
+  } else if (password.length < 6) {
+    error = 'La contraseña debe tener al menos 6 caracteres';
+  } else if (username.length < 3) {
+    error = 'El nombre de usuario debe tener al menos 3 caracteres';
+  } else if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+    error = 'El nombre de usuario solo puede contener letras, números y guiones bajos';
+  }
+  
+  if (!error) {
+    const { supabase, isSupabaseConfigured, createServerClient } = await import('../lib/supabase');
+    
+    // Handle Demo Mode
+    if (!isSupabaseConfigured()) {
+      success = true;
+      // Note: in a real app logic we might want to store something in localstorage here too
+      // but usually registration is followed by login
+    } else {
+      // Check if username already exists
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', username.toLowerCase())
+        .single();
+      
+      if (existingUser) {
+        error = 'Este nombre de usuario ya está en uso';
+      } else {
+        // Create user
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${import.meta.env.PUBLIC_SITE_URL || 'http://localhost:4321'}/confirmacion-email`,
+            data: {
+              username: username.toLowerCase(),
+              full_name: fullName,
+              phone,
+              address,
+              postal_code: postalCode,
+              city,
+              document_number: documentNumber,
+            }
+          }
+        });
+        
+        if (signUpError) {
+          if (signUpError.message.includes('already registered')) {
+            error = 'Este email ya está registrado';
+          } else {
+            error = signUpError.message;
+          }
+        } else if (data.user) {
+          // Update profile with additional info using Service Role to bypass RLS
+          const supabaseAdmin = createServerClient();
+          const { error: profileError } = await supabaseAdmin.from('profiles').upsert({
+            id: data.user.id,
+            username: username.toLowerCase(),
+            email,
+            full_name: fullName,
+            phone,
+            address,
+            postal_code: postalCode,
+            city,
+            document_number: documentNumber,
+          });
+          
+          if (profileError) {
+            console.error('Error creating profile:', profileError);
+            // Optionally handle profile creation error, but user is created
+          }
+          
+          success = true;
+        }
+      }
+    }
+  }
+}
+---
+
+<BaseLayout title="Crear Cuenta | FashionStore">
+  <div class="min-h-screen flex items-center justify-center bg-cream-50 px-4 py-12">
+    <div class="w-full max-w-lg">
+      <!-- Logo -->
+      <div class="text-center mb-8">
+        <a href="/" class="inline-block text-3xl font-serif font-bold text-navy-900">
+          Fashion<span class="text-gold-600">Store</span>
+        </a>
+        <p class="text-charcoal-600 mt-2">Crea tu cuenta para comprar</p>
+      </div>
+      
+      <!-- Success Message -->
+      {success && (
+        <div class="bg-white rounded-2xl shadow-lg p-8 text-center">
+          <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 class="text-2xl font-serif font-bold text-navy-900 mb-2">
+            ¡Cuenta creada!
+          </h2>
+          <p class="text-charcoal-600 mb-6">
+            Te hemos enviado un email de verificación. Por favor, revisa tu bandeja de entrada.
+          </p>
+          <Button href="/login" variant="primary">
+            Ir a Iniciar Sesión
+          </Button>
+        </div>
+      )}
+      
+      <!-- Register Form -->
+      {!success && (
+        <div class="bg-white rounded-2xl shadow-lg p-8">
+          <h1 class="text-2xl font-serif font-bold text-navy-900 text-center mb-6">
+            Crear Cuenta
+          </h1>
+          
+          {error && (
+            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 text-sm">
+              {error}
+            </div>
+          )}
+          
+          <div class="mb-6">
+            <button id="google-signup-btn" type="button" class="relative z-10 pointer-events-auto cursor-pointer w-full flex items-center justify-center gap-3 px-4 py-3 border border-charcoal-200 rounded-lg text-charcoal-700 font-medium hover:bg-gray-50 transition-colors bg-white">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+              </svg>
+              Continuar con Google
+            </button>
+          </div>
+
+          <div class="relative flex items-center justify-center mb-6">
+            <span class="absolute px-3 bg-white text-sm text-charcoal-400">o regístrate con tu email</span>
+            <div class="w-full border-t border-charcoal-100"></div>
+          </div>
+
+          <form method="POST" class="space-y-5">
+            <!-- Account Info -->
+            <div class="space-y-4">
+              <h3 class="text-sm font-semibold text-charcoal-700 uppercase tracking-wider">
+                Datos de acceso
+              </h3>
+              
+              <div>
+                <label for="username" class="block text-sm font-medium text-charcoal-700 mb-2">
+                  Nombre de usuario *
+                </label>
+                <input 
+                  type="text" 
+                  id="username" 
+                  name="username"
+                  required
+                  pattern="[a-zA-Z0-9_]+"
+                  minlength="3"
+                  class="w-full px-4 py-3 rounded-lg border border-charcoal-200 focus:border-navy-500 focus:ring-2 focus:ring-navy-500/20 outline-none transition-all"
+                  placeholder="mi_usuario"
+                />
+                <p class="text-xs text-charcoal-500 mt-1">Solo letras, números y guiones bajos</p>
+              </div>
+              
+              <div>
+                <label for="email" class="block text-sm font-medium text-charcoal-700 mb-2">
+                  Email *
+                </label>
+                <input 
+                  type="email" 
+                  id="email" 
+                  name="email"
+                  required
+                  class="w-full px-4 py-3 rounded-lg border border-charcoal-200 focus:border-navy-500 focus:ring-2 focus:ring-navy-500/20 outline-none transition-all"
+                  placeholder="tu@email.com"
+                />
+              </div>
+              
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label for="password" class="block text-sm font-medium text-charcoal-700 mb-2">
+                    Contraseña *
+                  </label>
+                  <input 
+                    type="password" 
+                    id="password" 
+                    name="password"
+                    required
+                    minlength="6"
+                    class="w-full px-4 py-3 rounded-lg border border-charcoal-200 focus:border-navy-500 focus:ring-2 focus:ring-navy-500/20 outline-none transition-all"
+                    placeholder="••••••••"
+                  />
+                </div>
+                <div>
+                  <label for="confirm_password" class="block text-sm font-medium text-charcoal-700 mb-2">
+                    Confirmar *
+                  </label>
+                  <input 
+                    type="password" 
+                    id="confirm_password" 
+                    name="confirm_password"
+                    required
+                    minlength="6"
+                    class="w-full px-4 py-3 rounded-lg border border-charcoal-200 focus:border-navy-500 focus:ring-2 focus:ring-navy-500/20 outline-none transition-all"
+                    placeholder="••••••••"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <!-- Personal Info -->
+            <div class="space-y-4 pt-4 border-t border-cream-200">
+              <h3 class="text-sm font-semibold text-charcoal-700 uppercase tracking-wider">
+                Datos personales
+              </h3>
+              
+              <div>
+                <label for="full_name" class="block text-sm font-medium text-charcoal-700 mb-2">
+                  Nombre completo
+                </label>
+                <input 
+                  type="text" 
+                  id="full_name" 
+                  name="full_name"
+                  class="w-full px-4 py-3 rounded-lg border border-charcoal-200 focus:border-navy-500 focus:ring-2 focus:ring-navy-500/20 outline-none transition-all"
+                  placeholder="Juan García López"
+                />
+              </div>
+              
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label for="phone" class="block text-sm font-medium text-charcoal-700 mb-2">
+                    Teléfono
+                  </label>
+                  <input 
+                    type="tel" 
+                    id="phone" 
+                    name="phone"
+                    class="w-full px-4 py-3 rounded-lg border border-charcoal-200 focus:border-navy-500 focus:ring-2 focus:ring-navy-500/20 outline-none transition-all"
+                    placeholder="+34 600 000 000"
+                  />
+                </div>
+                <div>
+                  <label for="document_number" class="block text-sm font-medium text-charcoal-700 mb-2">
+                    DNI/NIE
+                  </label>
+                  <input 
+                    type="text" 
+                    id="document_number" 
+                    name="document_number"
+                    class="w-full px-4 py-3 rounded-lg border border-charcoal-200 focus:border-navy-500 focus:ring-2 focus:ring-navy-500/20 outline-none transition-all"
+                    placeholder="12345678A"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <!-- Address Info -->
+            <div class="space-y-4 pt-4 border-t border-cream-200">
+              <h3 class="text-sm font-semibold text-charcoal-700 uppercase tracking-wider">
+                Dirección de envío
+              </h3>
+              
+              <div>
+                <label for="address" class="block text-sm font-medium text-charcoal-700 mb-2">
+                  Dirección
+                </label>
+                <input 
+                  type="text" 
+                  id="address" 
+                  name="address"
+                  class="w-full px-4 py-3 rounded-lg border border-charcoal-200 focus:border-navy-500 focus:ring-2 focus:ring-navy-500/20 outline-none transition-all"
+                  placeholder="Calle Mayor 123, 2º B"
+                />
+              </div>
+              
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label for="postal_code" class="block text-sm font-medium text-charcoal-700 mb-2">
+                    Código Postal
+                  </label>
+                  <input 
+                    type="text" 
+                    id="postal_code" 
+                    name="postal_code"
+                    class="w-full px-4 py-3 rounded-lg border border-charcoal-200 focus:border-navy-500 focus:ring-2 focus:ring-navy-500/20 outline-none transition-all"
+                    placeholder="28001"
+                  />
+                </div>
+                <div>
+                  <label for="city" class="block text-sm font-medium text-charcoal-700 mb-2">
+                    Ciudad
+                  </label>
+                  <input 
+                    type="text" 
+                    id="city" 
+                    name="city"
+                    class="w-full px-4 py-3 rounded-lg border border-charcoal-200 focus:border-navy-500 focus:ring-2 focus:ring-navy-500/20 outline-none transition-all"
+                    placeholder="Madrid"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <!-- Terms -->
+            <div class="pt-4">
+              <label class="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" required class="w-4 h-4 mt-1 rounded border-charcoal-300 text-navy-600" />
+                <span class="text-sm text-charcoal-600">
+                  Acepto los <a href="/terminos" class="text-navy-600 hover:underline">términos y condiciones</a> y la <a href="/privacidad" class="text-navy-600 hover:underline">política de privacidad</a>
+                </span>
+              </label>
+            </div>
+            
+            <Button type="submit" variant="primary" size="lg" fullWidth>
+              Crear Cuenta
+            </Button>
+          </form>
+          
+          <div class="mt-6 text-center">
+            <p class="text-charcoal-600">
+              ¿Ya tienes cuenta?{' '}
+              <a href="/login" class="text-navy-600 hover:text-navy-800 font-medium">
+                Inicia sesión
+              </a>
+            </p>
+          </div>
+        </div>
+      )}
+      
+      <!-- Back to store -->
+      <div class="mt-6 text-center">
+        <a href="/" class="text-sm text-charcoal-500 hover:text-navy-600 transition-colors">
+          ← Volver a la tienda
+        </a>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { createClient } from '@supabase/supabase-js';
+
+  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+  const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+  const supabase = createClient(supabaseUrl, supabaseKey, {
+    auth: {
+      flowType: 'pkce',
+    },
+  });
+
+  const initGoogleSignup = () => {
+    const googleBtn = document.getElementById('google-signup-btn') as HTMLButtonElement | null;
+    if (!googleBtn) return;
+
+    const resetGoogleBtn = () => {
+      // Asegura que el botón sea clickeable incluso si quedó marcado como disabled
+      googleBtn.disabled = false;
+      googleBtn.removeAttribute('disabled');
+      googleBtn.style.pointerEvents = 'auto';
+      if (!googleBtn.textContent || googleBtn.textContent === 'Conectando...') {
+        googleBtn.textContent = 'Continuar con Google';
+      }
+    };
+
+    resetGoogleBtn();
+    window.addEventListener('pageshow', resetGoogleBtn);
+
+    googleBtn.addEventListener('click', async () => {
+      let originalText: string | null = null;
+      try {
+        googleBtn.setAttribute('disabled', 'true');
+        originalText = googleBtn.textContent;
+        googleBtn.textContent = 'Conectando...';
+
+        const primaryRedirectTo = new URL('/auth/callback', window.location.origin).toString();
+        const envSiteUrl = import.meta.env.PUBLIC_SITE_URL;
+        const fallbackRedirectTo = envSiteUrl
+          ? new URL('/auth/callback', envSiteUrl).toString()
+          : null;
+
+        const startOAuth = async (redirectTo: string) => {
+          return supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+              redirectTo,
+              skipBrowserRedirect: true,
+              queryParams: {
+                prompt: 'select_account',
+              },
+            },
+          });
+        };
+
+        let { data, error } = await startOAuth(primaryRedirectTo);
+        if (error && fallbackRedirectTo && fallbackRedirectTo !== primaryRedirectTo) {
+          ({ data, error } = await startOAuth(fallbackRedirectTo));
+        }
+
+        if (error) throw error;
+        if (!data?.url) throw new Error('No se recibió la URL de autenticación.');
+
+        window.location.assign(data.url);
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        alert('Error registrándose con Google: ' + message);
+
+        googleBtn.removeAttribute('disabled');
+        googleBtn.textContent = originalText || 'Continuar con Google';
+      }
+    });
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initGoogleSignup);
+  } else {
+    initGoogleSignup();
+  }
+</script>

@@ -1,0 +1,300 @@
+---
+/**
+ * Newsletter Popup Component - P&B Style
+ * Minimalist modal popup for newsletter subscription
+ */
+---
+
+<!-- Newsletter Popup Overlay -->
+<div id="newsletter-popup-overlay" class="fixed inset-0 z-50 hidden">
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/60" id="newsletter-backdrop"></div>
+  
+  <!-- Popup Modal - P&B Style -->
+  <div class="absolute inset-0 flex items-center justify-center p-4">
+    <div id="newsletter-popup" class="relative w-full max-w-md bg-white overflow-hidden animate-scale-in">
+      <!-- Close Button -->
+      <button 
+        id="newsletter-close" 
+        class="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center hover:opacity-70 transition-opacity"
+        aria-label="Cerrar"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+      
+      <!-- Header - P&B Style -->
+      <div class="bg-black px-8 py-10 text-white text-center">
+        <span class="text-xs uppercase tracking-widest opacity-70">Oferta Exclusiva</span>
+        <h2 class="text-3xl uppercase tracking-widest font-light mt-4 mb-2">
+          10% Descuento
+        </h2>
+        <p class="text-sm opacity-70">en tu primera compra</p>
+      </div>
+      
+      <!-- Form Content -->
+      <div class="px-8 py-8">
+        <div id="newsletter-form-container">
+          <p class="text-sm text-gray-600 text-center mb-6 leading-relaxed">
+            Suscríbete a nuestra newsletter y recibe las últimas novedades y ofertas exclusivas.
+          </p>
+          
+          <form id="newsletter-form" class="space-y-4">
+            <div>
+              <input 
+                type="text" 
+                id="newsletter-name" 
+                name="firstName"
+                placeholder="Nombre (opcional)"
+                class="w-full px-4 py-3 border border-gray-200 text-sm focus:border-black focus:outline-none transition-colors"
+              />
+            </div>
+            <div>
+              <input 
+                type="email" 
+                id="newsletter-email" 
+                name="email"
+                placeholder="Tu email"
+                required
+                class="w-full px-4 py-3 border border-gray-200 text-sm focus:border-black focus:outline-none transition-colors"
+              />
+            </div>
+            
+            <button 
+              type="submit"
+              id="newsletter-submit"
+              class="w-full bg-black text-white py-4 text-xs uppercase tracking-widest hover:bg-gray-800 transition-colors"
+            >
+              Suscribirme
+            </button>
+          </form>
+          
+          <p class="text-[10px] text-gray-400 text-center mt-4">
+            Al suscribirte aceptas nuestra política de privacidad
+          </p>
+        </div>
+        
+        <!-- Success State -->
+        <div id="newsletter-success" class="hidden text-center py-4">
+          <div class="w-16 h-16 flex items-center justify-center mx-auto mb-6">
+            <svg class="w-12 h-12" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          
+          <h3 class="text-xl uppercase tracking-widest font-light mb-4">
+            ¡Bienvenido/a!
+          </h3>
+          
+          <p class="text-sm text-gray-600 mb-6">
+            Tu código de descuento es:
+          </p>
+          
+          <div class="border border-gray-200 p-6 mb-6">
+            <p id="discount-code-display" class="text-2xl font-mono tracking-widest">
+              WELCOME10
+            </p>
+            <p class="text-xs text-gray-500 mt-2">10% de descuento</p>
+          </div>
+          
+          <button 
+            id="copy-code-btn"
+            class="inline-flex items-center gap-2 px-6 py-3 border border-gray-200 text-xs uppercase tracking-widest hover:border-black transition-colors"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />
+            </svg>
+            Copiar código
+          </button>
+          
+          <div class="mt-6 pt-6 border-t border-gray-100">
+            <a 
+              href="/productos" 
+              class="inline-block text-xs uppercase tracking-widest hover:underline"
+            >
+              Ir a comprar →
+            </a>
+          </div>
+        </div>
+        
+        <!-- Error State -->
+        <p id="newsletter-error" class="hidden mt-4 text-center text-accent-500 text-sm">
+          <!-- Error message will be inserted here -->
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const POPUP_STORAGE_KEY = 'fashionstore-newsletter-popup';
+  const POPUP_DELAY = 5000; // 5 seconds delay before showing
+  const POPUP_DISMISS_DAYS = 7; // Don't show again for 7 days if dismissed
+  
+  const overlay = document.getElementById('newsletter-popup-overlay');
+  const backdrop = document.getElementById('newsletter-backdrop');
+  const closeBtn = document.getElementById('newsletter-close');
+  const form = document.getElementById('newsletter-form') as HTMLFormElement;
+  const submitBtn = document.getElementById('newsletter-submit') as HTMLButtonElement;
+  const formContainer = document.getElementById('newsletter-form-container');
+  const successContainer = document.getElementById('newsletter-success');
+  const errorEl = document.getElementById('newsletter-error');
+  const codeDisplay = document.getElementById('discount-code-display');
+  const copyBtn = document.getElementById('copy-code-btn');
+  
+  function showPopup() {
+    overlay?.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+  
+  function hidePopup(savePreference = true) {
+    overlay?.classList.add('hidden');
+    document.body.style.overflow = '';
+    
+    if (savePreference) {
+      localStorage.setItem(POPUP_STORAGE_KEY, JSON.stringify({
+        dismissed: true,
+        timestamp: Date.now()
+      }));
+    }
+  }
+  
+  function shouldShowPopup(): boolean {
+    // Check if user is already subscribed
+    const userData = localStorage.getItem('fashionstore-user');
+    if (userData) {
+      const user = JSON.parse(userData);
+      if (user.newsletterSubscribed) return false;
+    }
+    
+    // Check if popup was recently dismissed
+    const popupData = localStorage.getItem(POPUP_STORAGE_KEY);
+    if (popupData) {
+      const data = JSON.parse(popupData);
+      if (data.dismissed || data.subscribed) {
+        const dismissedDate = new Date(data.timestamp);
+        const daysSinceDismissed = (Date.now() - dismissedDate.getTime()) / (1000 * 60 * 60 * 24);
+        
+        // If subscribed, never show again
+        if (data.subscribed) return false;
+        
+        // If just dismissed, wait POPUP_DISMISS_DAYS days
+        if (daysSinceDismissed < POPUP_DISMISS_DAYS) return false;
+      }
+    }
+    
+    return true;
+  }
+  
+  // Initialize popup timer
+  if (shouldShowPopup()) {
+    setTimeout(showPopup, POPUP_DELAY);
+  }
+  
+  // Close handlers
+  closeBtn?.addEventListener('click', () => hidePopup(true));
+  backdrop?.addEventListener('click', () => hidePopup(true));
+  
+  // Escape key handler
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !overlay?.classList.contains('hidden')) {
+      hidePopup(true);
+    }
+  });
+  
+  // Form submission
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const emailInput = document.getElementById('newsletter-email') as HTMLInputElement;
+    const nameInput = document.getElementById('newsletter-name') as HTMLInputElement;
+    
+    const email = emailInput.value.trim();
+    const firstName = nameInput.value.trim();
+    
+    if (!email) return;
+    
+    // Disable button and show loading
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Procesando...';
+    errorEl?.classList.add('hidden');
+    
+    try {
+      const response = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, firstName, source: 'popup' })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Update code display
+        if (codeDisplay && data.discountCode) {
+          codeDisplay.textContent = data.discountCode;
+        }
+        
+        // Show success state
+        formContainer?.classList.add('hidden');
+        successContainer?.classList.remove('hidden');
+        
+        // Save subscription state
+        localStorage.setItem(POPUP_STORAGE_KEY, JSON.stringify({
+          subscribed: true,
+          timestamp: Date.now(),
+          discountCode: data.discountCode
+        }));
+        
+        // Update user data if logged in
+        const userData = localStorage.getItem('fashionstore-user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          user.newsletterSubscribed = true;
+          localStorage.setItem('fashionstore-user', JSON.stringify(user));
+        }
+      } else {
+        throw new Error(data.error || 'Error al suscribirse');
+      }
+    } catch (error: any) {
+      errorEl!.textContent = error.message || 'Error al procesar la suscripción';
+      errorEl?.classList.remove('hidden');
+      
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Suscribirme';
+    }
+  });
+  
+  // Copy code button
+  copyBtn?.addEventListener('click', async () => {
+    const code = codeDisplay?.textContent || 'WELCOME10';
+    
+    try {
+      await navigator.clipboard.writeText(code);
+      
+      copyBtn.innerHTML = `
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+        </svg>
+        ¡Copiado!
+      `;
+      
+      setTimeout(() => {
+        copyBtn.innerHTML = `
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />
+          </svg>
+          Copiar código
+        `;
+      }, 2000);
+    } catch {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = code;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+    }
+  });
+</script>

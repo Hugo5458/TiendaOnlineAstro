@@ -1,0 +1,129 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import Button from '../../../components/ui/Button.astro';
+import { supabase } from '../../../lib/supabase';
+import { slugify } from '../../../lib/utils';
+
+export const prerender = false; // SSR
+
+const { id } = Astro.params;
+
+const { data: category, error: fetchError } = await supabase
+  .from('categories')
+  .select('*')
+  .eq('id', id)
+  .single();
+
+if (fetchError || !category) {
+  return Astro.redirect('/admin/categorias');
+}
+
+let error = '';
+
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+
+  const name = (formData.get('name') as string) || '';
+  const description = (formData.get('description') as string) || '';
+  const imageUrl = (formData.get('image_url') as string) || '';
+
+  if (!name.trim()) {
+    error = 'El nombre es obligatorio';
+  } else {
+    const slug = name.trim() !== category.name ? slugify(name) : category.slug;
+
+    const { error: updateError } = await supabase
+      .from('categories')
+      .update({
+        name: name.trim(),
+        slug,
+        description: description.trim() || null,
+        image_url: imageUrl.trim() || null,
+      })
+      .eq('id', id);
+
+    if (updateError) {
+      error = updateError.message;
+    } else {
+      return Astro.redirect('/admin/categorias');
+    }
+  }
+}
+
+const descriptionValue = category.description || '';
+const imageUrlValue = category.image_url || '';
+---
+
+<AdminLayout title={`Editar: ${category.name}`}>
+  <div class="max-w-2xl">
+    <a href="/admin/categorias" class="inline-flex items-center text-charcoal-600 hover:text-navy-600 mb-6">
+      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+      Volver a categorías
+    </a>
+
+    {error && (
+      <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+        {error}
+      </div>
+    )}
+
+    <form method="POST" class="space-y-6">
+      <div class="bg-white rounded-xl shadow-sm border border-charcoal-100 p-6">
+        <h2 class="text-lg font-semibold text-navy-900 mb-4">Información</h2>
+
+        <div class="space-y-4">
+          <div>
+            <label for="name" class="block text-sm font-medium text-charcoal-700 mb-2">
+              Nombre *
+            </label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              required
+              value={category.name}
+              class="w-full px-4 py-3 rounded-lg border border-charcoal-200 focus:border-navy-500 focus:ring-2 focus:ring-navy-500/20 outline-none"
+            />
+          </div>
+
+          <div>
+            <label for="description" class="block text-sm font-medium text-charcoal-700 mb-2">
+              Descripción
+            </label>
+            <textarea
+              id="description"
+              name="description"
+              rows="4"
+              class="w-full px-4 py-3 rounded-lg border border-charcoal-200 focus:border-navy-500 focus:ring-2 focus:ring-navy-500/20 outline-none resize-none"
+            >{descriptionValue}</textarea>
+          </div>
+
+          <div>
+            <label for="image_url" class="block text-sm font-medium text-charcoal-700 mb-2">
+              URL de imagen
+            </label>
+            <input
+              type="url"
+              id="image_url"
+              name="image_url"
+              value={imageUrlValue}
+              class="w-full px-4 py-3 rounded-lg border border-charcoal-200 focus:border-navy-500 focus:ring-2 focus:ring-navy-500/20 outline-none"
+              placeholder="https://..."
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-4">
+        <Button href="/admin/categorias" variant="ghost">
+          Cancelar
+        </Button>
+        <Button type="submit" variant="primary">
+          Guardar Cambios
+        </Button>
+      </div>
+    </form>
+  </div>
+</AdminLayout>

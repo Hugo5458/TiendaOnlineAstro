@@ -1,0 +1,52 @@
+# Archivo .dockerignore para FashionStore
+# Optimiza el build excluyendo archivos innecesarios
+
+# Dependencias (se instalan en el container)
+node_modules
+.pnpm-store
+
+# Build local
+dist
+.astro
+
+# Git
+.git
+.gitignore
+
+# Documentación
+*.md
+!README.md
+LICENSE
+
+# Entorno local
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+
+# Testing
+coverage
+.nyc_output
+
+# Dev tools
+*.local
+.turbo
+
+# Supabase local
+supabase/.branches
+supabase/.temp
+
+# Otros
+proud-pulsar

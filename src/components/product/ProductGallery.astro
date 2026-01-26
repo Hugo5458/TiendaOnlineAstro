@@ -1,0 +1,199 @@
+---
+interface Props {
+  images: string[];
+  productName: string;
+}
+
+const { images, productName } = Astro.props;
+const mainImage = images[0] || '/placeholder.jpg';
+---
+
+<div class="product-gallery">
+  <!-- Main Image Container - P&B Style -->
+  <div class="aspect-[3/4] bg-gray-100 overflow-hidden mb-4 relative group">
+    <img 
+      id="main-gallery-image"
+      src={mainImage}
+      alt={productName}
+      class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+    />
+    
+    <!-- Zoom Indicator - Minimal -->
+    <button 
+      id="zoom-btn"
+      class="absolute bottom-4 right-4 w-10 h-10 bg-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-gray-100"
+      aria-label="Ampliar imagen"
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM10.5 7.5v6m3-3h-6" />
+      </svg>
+    </button>
+  </div>
+  
+  <!-- Thumbnails - P&B Style -->
+  {images.length > 1 && (
+    <div class="grid grid-cols-5 gap-2">
+      {images.map((image, index) => (
+        <button 
+          class={`gallery-thumb aspect-square bg-gray-100 overflow-hidden border transition-all duration-200 ${index === 0 ? 'border-black' : 'border-transparent hover:border-gray-300'}`}
+          data-image={image}
+          data-index={index}
+          title={`Imagen ${index + 1}`}
+        >
+          <img 
+            src={image}
+            alt={`${productName} - Imagen ${index + 1}`}
+            class="w-full h-full object-cover"
+            loading="lazy"
+          />
+        </button>
+      ))}
+    </div>
+  )}
+</div>
+
+<!-- Lightbox Modal - P&B Style -->
+<div id="lightbox-modal" class="fixed inset-0 z-50 hidden bg-white">
+  <div class="absolute inset-0 flex items-center justify-center">
+    <img 
+      id="lightbox-image"
+      src=""
+      alt=""
+      class="max-w-full max-h-full object-contain"
+    />
+  </div>
+  <button 
+    id="lightbox-close"
+    class="absolute top-4 right-4 w-12 h-12 flex items-center justify-center hover:opacity-70 transition-opacity"
+    aria-label="Cerrar"
+  >
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  </button>
+  
+  <!-- Navigation Arrows -->
+  <button 
+    id="lightbox-prev"
+    class="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center hover:opacity-70 transition-opacity"
+    aria-label="Anterior"
+  >
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+    </svg>
+  </button>
+  <button 
+    id="lightbox-next"
+    class="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center hover:opacity-70 transition-opacity"
+    aria-label="Siguiente"
+  >
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+    </svg>
+  </button>
+</div>
+
+<script define:vars={{ images }}>
+  const mainImage = document.getElementById('main-gallery-image');
+  const thumbs = document.querySelectorAll('.gallery-thumb');
+  const zoomBtn = document.getElementById('zoom-btn');
+  const lightbox = document.getElementById('lightbox-modal');
+  const lightboxImage = document.getElementById('lightbox-image');
+  const lightboxClose = document.getElementById('lightbox-close');
+  const lightboxPrev = document.getElementById('lightbox-prev');
+  const lightboxNext = document.getElementById('lightbox-next');
+  
+  let currentIndex = 0;
+  const imageList = images;
+  
+  // Thumbnail click handler
+  thumbs.forEach(thumb => {
+    thumb.addEventListener('click', (e) => {
+      e.preventDefault();
+      const imageSrc = thumb.dataset.image;
+      const index = parseInt(thumb.dataset.index || '0');
+      
+      if (imageSrc && mainImage) {
+        currentIndex = index;
+        mainImage.src = imageSrc;
+        
+        // Update active state
+        thumbs.forEach(t => {
+          t.classList.remove('border-black');
+          t.classList.add('border-transparent');
+        });
+        
+        thumb.classList.remove('border-transparent');
+        thumb.classList.add('border-black');
+      }
+    });
+  });
+
+  // Zoom / Lightbox functionality
+  function openLightbox() {
+    if (lightbox && lightboxImage) {
+      lightboxImage.src = imageList[currentIndex];
+      lightbox.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+  }
+  
+  function closeLightbox() {
+    if (lightbox) {
+      lightbox.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+  }
+  
+  function nextImage() {
+    currentIndex = (currentIndex + 1) % imageList.length;
+    lightboxImage.src = imageList[currentIndex];
+    updateMainImage();
+  }
+  
+  function prevImage() {
+    currentIndex = (currentIndex - 1 + imageList.length) % imageList.length;
+    lightboxImage.src = imageList[currentIndex];
+    updateMainImage();
+  }
+  
+  function updateMainImage() {
+    if (mainImage) {
+      mainImage.src = imageList[currentIndex];
+    }
+    thumbs.forEach((t, i) => {
+      if (i === currentIndex) {
+        t.classList.remove('border-transparent');
+        t.classList.add('border-black');
+      } else {
+        t.classList.remove('border-black');
+        t.classList.add('border-transparent');
+      }
+    });
+  }
+  
+  zoomBtn?.addEventListener('click', openLightbox);
+  mainImage?.addEventListener('click', openLightbox);
+  lightboxClose?.addEventListener('click', closeLightbox);
+  lightboxPrev?.addEventListener('click', prevImage);
+  lightboxNext?.addEventListener('click', nextImage);
+  
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (!lightbox?.classList.contains('hidden')) {
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft') prevImage();
+      if (e.key === 'ArrowRight') nextImage();
+    }
+  });
+</script>
+
+<style>
+  .gallery-thumb {
+    cursor: pointer;
+  }
+  
+  #main-gallery-image {
+    cursor: zoom-in;
+  }
+</style>

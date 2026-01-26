@@ -1,0 +1,446 @@
+---
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import Button from '../../components/ui/Button.astro';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+
+export const prerender = false;
+
+// Check authentication
+const accessToken = Astro.cookies.get('sb-access-token')?.value;
+
+if (!accessToken && isSupabaseConfigured()) {
+  return Astro.redirect('/login?redirect=/cuenta/seguridad');
+}
+
+let user = null;
+let profile = null;
+
+if (isSupabaseConfigured() && accessToken) {
+  const { data: { user: authUser } } = await supabase.auth.getUser(accessToken);
+  user = authUser;
+  
+  if (user) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+    profile = data;
+  }
+} else {
+  // Demo profile
+  profile = {
+    username: 'demo_user',
+    email: 'demo@example.com'
+  };
+}
+
+// Check if user logged in with OAuth (can't change password)
+const isOAuthUser = user?.app_metadata?.provider && user.app_metadata.provider !== 'email';
+---
+
+<PublicLayout title="Seguridad | FashionStore">
+  <div class="min-h-screen bg-gradient-to-b from-primary-50 via-white to-primary-50/50">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+      <!-- Breadcrumb -->
+      <nav class="text-sm text-primary-600 mb-8 flex items-center gap-2 animate-slide-down">
+        <a href="/" class="hover:text-primary-900 transition-colors">Inicio</a>
+        <span class="text-primary-300">/</span>
+        <a href="/cuenta" class="hover:text-primary-900 transition-colors">Mi Cuenta</a>
+        <span class="text-primary-300">/</span>
+        <span class="text-primary-900 font-semibold">Seguridad</span>
+      </nav>
+
+      <!-- Header -->
+      <div class="mb-12 animate-slide-down">
+        <div class="flex items-center gap-4 mb-4">
+          <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white shadow-lg">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-4xl lg:text-5xl font-serif font-bold text-primary-950">Seguridad</h1>
+            <p class="text-primary-700 text-lg mt-1">Gestiona la seguridad de tu cuenta</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <!-- Sidebar Navigation -->
+        <div class="lg:col-span-1">
+          <nav class="bg-white rounded-2xl shadow-md border-2 border-primary-200/50 overflow-hidden sticky top-24 animate-scale-in">
+            <a href="/cuenta" class="flex items-center gap-3 px-6 py-4 text-primary-700 hover:bg-primary-50 border-l-4 border-transparent hover:border-primary-300 transition-all font-medium">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Mi Perfil
+            </a>
+
+            <a href="/cuenta/pedidos" class="flex items-center gap-3 px-6 py-4 text-primary-700 hover:bg-primary-50 border-l-4 border-transparent hover:border-primary-300 transition-all font-medium">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m0 0l8-4m0 0l8 4m-8 4v10l-8-4m0 0v10l8 4m0-10l8-4" />
+              </svg>
+              Mis Pedidos
+            </a>
+
+            <a href="/cuenta/direcciones" class="flex items-center gap-3 px-6 py-4 text-primary-700 hover:bg-primary-50 border-l-4 border-transparent hover:border-primary-300 transition-all font-medium">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Direcciones
+            </a>
+
+            <a href="/cuenta/seguridad" class="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-primary-50 to-primary-100/50 text-primary-900 font-semibold border-l-4 border-primary-600 transition-all">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              Seguridad
+            </a>
+
+            <hr class="border-primary-200/50" />
+
+            <form action="/api/auth/customer-logout" method="POST" class="block w-full">
+              <button type="submit" class="w-full flex items-center gap-3 px-6 py-4 text-danger-600 hover:bg-danger-50 border-l-4 border-transparent hover:border-danger-300 transition-all font-medium">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Cerrar Sesión
+              </button>
+            </form>
+          </nav>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="lg:col-span-3 space-y-6">
+          <!-- Change Password Section -->
+          <div class="bg-white rounded-2xl shadow-md border-2 border-primary-200/50 overflow-hidden animate-slide-up">
+            <div class="bg-gradient-to-r from-primary-50 to-primary-100/50 px-8 py-6 border-b-2 border-primary-200/50">
+              <h2 class="text-2xl font-serif font-bold text-primary-950 flex items-center gap-3">
+                <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+                Cambiar Contraseña
+              </h2>
+            </div>
+
+            <div class="p-8">
+              {isOAuthUser ? (
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
+                  <div class="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                  <h3 class="text-lg font-bold text-amber-900 mb-2">Cuenta vinculada con Google</h3>
+                  <p class="text-amber-800">
+                    Has iniciado sesión con Google, por lo que no puedes cambiar la contraseña desde aquí. 
+                    Gestiona tu contraseña desde tu cuenta de Google.
+                  </p>
+                </div>
+              ) : (
+                <form id="password-form" class="space-y-6">
+                  <div>
+                    <label for="current_password" class="block text-sm font-semibold text-primary-900 mb-3">
+                      Contraseña Actual *
+                    </label>
+                    <div class="relative">
+                      <input 
+                        type="password" 
+                        id="current_password" 
+                        name="current_password"
+                        required
+                        class="w-full px-4 py-3 rounded-xl border-2 border-primary-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-300/50 outline-none transition-all pr-12"
+                        placeholder="Tu contraseña actual"
+                      />
+                      <button 
+                        type="button"
+                        class="toggle-password absolute right-4 top-1/2 -translate-y-1/2 text-primary-400 hover:text-primary-600 transition-colors"
+                        data-target="current_password"
+                      >
+                        <svg class="w-5 h-5 eye-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        <svg class="w-5 h-5 eye-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label for="new_password" class="block text-sm font-semibold text-primary-900 mb-3">
+                      Nueva Contraseña *
+                    </label>
+                    <div class="relative">
+                      <input 
+                        type="password" 
+                        id="new_password" 
+                        name="new_password"
+                        required
+                        minlength="6"
+                        class="w-full px-4 py-3 rounded-xl border-2 border-primary-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-300/50 outline-none transition-all pr-12"
+                        placeholder="Mínimo 6 caracteres"
+                      />
+                      <button 
+                        type="button"
+                        class="toggle-password absolute right-4 top-1/2 -translate-y-1/2 text-primary-400 hover:text-primary-600 transition-colors"
+                        data-target="new_password"
+                      >
+                        <svg class="w-5 h-5 eye-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        <svg class="w-5 h-5 eye-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                        </svg>
+                      </button>
+                    </div>
+                    <p class="text-xs text-primary-500 mt-2">Mínimo 6 caracteres</p>
+                  </div>
+
+                  <div>
+                    <label for="confirm_password" class="block text-sm font-semibold text-primary-900 mb-3">
+                      Confirmar Nueva Contraseña *
+                    </label>
+                    <div class="relative">
+                      <input 
+                        type="password" 
+                        id="confirm_password" 
+                        name="confirm_password"
+                        required
+                        minlength="6"
+                        class="w-full px-4 py-3 rounded-xl border-2 border-primary-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-300/50 outline-none transition-all pr-12"
+                        placeholder="Repite la nueva contraseña"
+                      />
+                      <button 
+                        type="button"
+                        class="toggle-password absolute right-4 top-1/2 -translate-y-1/2 text-primary-400 hover:text-primary-600 transition-colors"
+                        data-target="confirm_password"
+                      >
+                        <svg class="w-5 h-5 eye-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        <svg class="w-5 h-5 eye-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Messages -->
+                  <div id="password-success" class="hidden p-4 bg-success-50 border-l-4 border-success-600 rounded-xl text-success-700 font-medium flex items-center gap-3">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                    <span></span>
+                  </div>
+
+                  <div id="password-error" class="hidden p-4 bg-danger-50 border-l-4 border-danger-600 rounded-xl text-danger-700 font-medium flex items-center gap-3">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                    </svg>
+                    <span></span>
+                  </div>
+
+                  <div class="flex justify-end pt-4">
+                    <Button type="submit" variant="secondary" size="lg" class="group shadow-lg hover:shadow-xl transition-all" id="submit-btn">
+                      <span class="flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        Cambiar Contraseña
+                      </span>
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+
+          <!-- Security Tips -->
+          <div class="bg-white rounded-2xl shadow-md border-2 border-primary-200/50 overflow-hidden animate-slide-up" style="animation-delay: 100ms">
+            <div class="bg-gradient-to-r from-blue-50 to-blue-100/50 px-8 py-6 border-b-2 border-blue-200/50">
+              <h2 class="text-2xl font-serif font-bold text-blue-900 flex items-center gap-3">
+                <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                </svg>
+                Consejos de Seguridad
+              </h2>
+            </div>
+
+            <div class="p-8">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="flex items-start gap-4">
+                  <div class="w-10 h-10 rounded-full bg-success-100 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-success-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 class="font-semibold text-primary-900 mb-1">Usa contraseñas únicas</h4>
+                    <p class="text-sm text-primary-600">No reutilices la misma contraseña en diferentes sitios.</p>
+                  </div>
+                </div>
+                
+                <div class="flex items-start gap-4">
+                  <div class="w-10 h-10 rounded-full bg-success-100 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-success-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 class="font-semibold text-primary-900 mb-1">Combina caracteres</h4>
+                    <p class="text-sm text-primary-600">Mezcla mayúsculas, minúsculas, números y símbolos.</p>
+                  </div>
+                </div>
+                
+                <div class="flex items-start gap-4">
+                  <div class="w-10 h-10 rounded-full bg-success-100 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-success-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 class="font-semibold text-primary-900 mb-1">Cambia regularmente</h4>
+                    <p class="text-sm text-primary-600">Actualiza tus contraseñas cada 3-6 meses.</p>
+                  </div>
+                </div>
+                
+                <div class="flex items-start gap-4">
+                  <div class="w-10 h-10 rounded-full bg-success-100 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-success-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 class="font-semibold text-primary-900 mb-1">No compartas credenciales</h4>
+                    <p class="text-sm text-primary-600">Nunca compartas tu contraseña con nadie.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Back Link -->
+      <div class="mt-12">
+        <a href="/cuenta" class="inline-flex items-center gap-2 text-primary-600 hover:text-primary-900 font-medium transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          Volver a Mi Cuenta
+        </a>
+      </div>
+    </div>
+  </div>
+</PublicLayout>
+
+<script>
+  // Toggle password visibility
+  document.querySelectorAll('.toggle-password').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = (btn as HTMLElement).dataset.target;
+      const input = document.getElementById(targetId!) as HTMLInputElement;
+      const eyeOpen = btn.querySelector('.eye-open');
+      const eyeClosed = btn.querySelector('.eye-closed');
+      
+      if (input.type === 'password') {
+        input.type = 'text';
+        eyeOpen?.classList.add('hidden');
+        eyeClosed?.classList.remove('hidden');
+      } else {
+        input.type = 'password';
+        eyeOpen?.classList.remove('hidden');
+        eyeClosed?.classList.add('hidden');
+      }
+    });
+  });
+
+  // Form submission
+  const form = document.getElementById('password-form') as HTMLFormElement;
+  const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+  const successEl = document.getElementById('password-success');
+  const errorEl = document.getElementById('password-error');
+  
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const currentPassword = (document.getElementById('current_password') as HTMLInputElement).value;
+    const newPassword = (document.getElementById('new_password') as HTMLInputElement).value;
+    const confirmPassword = (document.getElementById('confirm_password') as HTMLInputElement).value;
+    
+    // Reset messages
+    successEl?.classList.add('hidden');
+    errorEl?.classList.add('hidden');
+    
+    // Validation
+    if (newPassword.length < 6) {
+      showError('La nueva contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      showError('Las contraseñas no coinciden');
+      return;
+    }
+    
+    if (currentPassword === newPassword) {
+      showError('La nueva contraseña debe ser diferente a la actual');
+      return;
+    }
+    
+    // Disable button
+    submitBtn.disabled = true;
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = `
+      <span class="flex items-center gap-2">
+        <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Cambiando...
+      </span>
+    `;
+    
+    try {
+      const response = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        showSuccess(data.message);
+        form.reset();
+      } else {
+        showError(data.error || 'Error al cambiar la contraseña');
+      }
+    } catch (error) {
+      showError('Error de conexión. Inténtalo de nuevo.');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalText;
+    }
+  });
+  
+  function showSuccess(message: string) {
+    const span = successEl?.querySelector('span');
+    if (span) span.textContent = message;
+    successEl?.classList.remove('hidden');
+    successEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  
+  function showError(message: string) {
+    const span = errorEl?.querySelector('span');
+    if (span) span.textContent = message;
+    errorEl?.classList.remove('hidden');
+    errorEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+</script>

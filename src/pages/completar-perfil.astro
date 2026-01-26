@@ -1,0 +1,210 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Button from '../components/ui/Button.astro';
+import { supabase } from '../lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+
+export const prerender = false;
+
+// Authenticate user
+let user = null;
+const accessToken = Astro.cookies.get('sb-access-token')?.value;
+
+if (accessToken) {
+  const { data: { user: authUser } } = await supabase.auth.getUser(accessToken);
+  if (authUser) user = authUser;
+}
+
+if (!user) {
+  return Astro.redirect('/login');
+}
+
+// Check if profile exists and what data is missing
+const { data: profile } = await supabase
+  .from('profiles')
+  .select('*')
+  .eq('id', user.id)
+  .single();
+
+let error = '';
+
+// Handle form submission
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  const username = formData.get('username')?.toString().trim();
+  const phone = formData.get('phone')?.toString().trim();
+  const address = formData.get('address')?.toString().trim();
+  const postalCode = formData.get('postal_code')?.toString().trim();
+  const city = formData.get('city')?.toString().trim();
+
+  if (!username || !phone || !address || !postalCode || !city) {
+    error = 'Por favor, rellena todos los campos obligatorios.';
+  } else {
+    // Check username availability if changed
+    if (username !== profile?.username) {
+        const { data: existingUser } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('username', username)
+            .single();
+            
+        if (existingUser && existingUser.id !== user.id) {
+            error = 'El nombre de usuario ya está ocupado.';
+        }
+    }
+
+    if (!error) {
+        const updates = {
+            id: user.id,
+            email: user.email,
+            username,
+            phone,
+            address,
+            postal_code: postalCode,
+            city,
+            updated_at: new Date().toISOString(),
+        };
+
+        // USAR SERVICE ROLE PARA SALTARSE RLS (Permisos de base de datos)
+        // Esto evita el error "new row violates row-level security policy"
+        const supabaseAdmin = createClient(
+            import.meta.env.PUBLIC_SUPABASE_URL,
+            import.meta.env.SUPABASE_SERVICE_ROLE_KEY
+        );
+
+        const { error: upsertError } = await supabaseAdmin
+            .from('profiles')
+            .upsert(updates);
+
+        if (upsertError) {
+            error = 'Error al guardar los datos: ' + upsertError.message;
+        } else {
+            // Success! Update local storage helper and redirect
+            const ADMIN_EMAILS = ['hugodelmoral77@gmail.com', 'admin@fashionstore.com'];
+            const isAdmin = !!user?.email && ADMIN_EMAILS.includes(user.email);
+            return Astro.redirect(isAdmin ? '/admin' : '/cuenta');
+        }
+    }
+  }
+}
+
+// Pre-fill data
+const defaultUsername = profile?.username || user.email?.split('@')[0] || '';
+---
+
+<BaseLayout title="Completar Perfil | FashionStore">
+  <div class="min-h-screen bg-cream-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+      <div class="bg-navy-900 px-8 py-6 text-center">
+        <h2 class="text-2xl font-serif font-bold text-white">
+          ¡Casi hemos terminado!
+        </h2>
+        <p class="text-navy-100 mt-2 text-sm">
+          Por favor, completa tu información para finalizar el registro.
+        </p>
+      </div>
+
+      <div class="p-8">
+        {error && (
+          <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <p class="text-sm text-red-700">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <form method="POST" class="space-y-6">
+          <div>
+            <label for="username" class="block text-sm font-medium text-charcoal-700">
+              Nombre de Usuario
+            </label>
+            <input
+              type="text"
+              name="username"
+              id="username"
+              required
+              value={defaultUsername}
+              class="mt-1 block w-full border-charcoal-200 rounded-lg shadow-sm focus:ring-navy-500 focus:border-navy-500 transition-colors"
+            />
+          </div>
+
+          <div>
+            <label for="phone" class="block text-sm font-medium text-charcoal-700">
+              Teléfono
+            </label>
+            <input
+              type="tel"
+              name="phone"
+              id="phone"
+              required
+              value={profile?.phone || ''}
+              placeholder="+34 600 000 000"
+              class="mt-1 block w-full border-charcoal-200 rounded-lg shadow-sm focus:ring-navy-500 focus:border-navy-500 transition-colors"
+            />
+          </div>
+
+          <div>
+            <label for="address" class="block text-sm font-medium text-charcoal-700">
+              Dirección de Envío
+            </label>
+            <input
+              type="text"
+              name="address"
+              id="address"
+              required
+              value={profile?.address || ''}
+              class="mt-1 block w-full border-charcoal-200 rounded-lg shadow-sm focus:ring-navy-500 focus:border-navy-500 transition-colors"
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="postal_code" class="block text-sm font-medium text-charcoal-700">
+                Código Postal
+              </label>
+              <input
+                type="text"
+                name="postal_code"
+                id="postal_code"
+                required
+                value={profile?.postal_code || ''}
+                class="mt-1 block w-full border-charcoal-200 rounded-lg shadow-sm focus:ring-navy-500 focus:border-navy-500 transition-colors"
+              />
+            </div>
+
+            <div>
+              <label for="city" class="block text-sm font-medium text-charcoal-700">
+                Ciudad
+              </label>
+              <input
+                type="text"
+                name="city"
+                id="city"
+                required
+                value={profile?.city || ''}
+                class="mt-1 block w-full border-charcoal-200 rounded-lg shadow-sm focus:ring-navy-500 focus:border-navy-500 transition-colors"
+              />
+            </div>
+          </div>
+
+          <div class="pt-4">
+             <Button type="submit" variant="primary" size="lg" fullWidth>
+               Guardar y Continuar
+             </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+    // Update local storage if redirecting currently (handled by server redirect but just in case)
+</script>

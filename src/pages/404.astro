@@ -1,0 +1,29 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+---
+
+<PublicLayout title="Página no encontrada | FashionStore">
+  <div class="min-h-[60vh] flex items-center justify-center py-24">
+    <div class="max-w-3xl text-center px-6">
+      <svg class="mx-auto mb-6 w-20 h-20 text-primary-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <h1 class="text-4xl font-bold text-primary-950 mb-4">404 — Página no encontrada</h1>
+      <p class="text-primary-600 mb-6">Lo sentimos, la ruta que intentas abrir no existe o el contenido aún no está disponible.</p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <a href="/" class="block p-4 bg-primary-50 hover:bg-primary-100 rounded-lg">Inicio</a>
+        <a href="/productos" class="block p-4 bg-primary-50 hover:bg-primary-100 rounded-lg">Ver productos</a>
+        <a href="/categoria/mujer" class="block p-4 bg-primary-50 hover:bg-primary-100 rounded-lg">Categoría Mujer</a>
+      </div>
+
+      <div class="text-sm text-primary-600">
+        <p class="mb-2">Si crees que esto es un error, revisa:</p>
+        <ul class="list-disc list-inside">
+          <li>La URL: verifica que no haya faltas de escritura.</li>
+          <li>Si estás en desarrollo, asegúrate de que la base de datos y las migraciones estén cargadas.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</PublicLayout>

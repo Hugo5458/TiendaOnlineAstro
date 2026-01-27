@@ -117,8 +117,23 @@ export const prerender = false;
         }
 
         const code = urlParams.get('code');
+        
+        // Check for hash parameters (Implicit Flow) - used by magic links sometimes
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        const type = hashParams.get('type');
 
-        // 2. If PKCE code exists, exchange it
+        // 2a. If Hash exists (Implicit Flow), set session manually
+        if (accessToken && (type === 'recovery' || type === 'magiclink')) {
+             const { data, error } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken || ''
+             });
+             if (error) console.error("Error setting session from hash:", error);
+        }
+
+        // 2b. If PKCE code exists, exchange it
         if (code) {
            try {
              const { error } = await supabase.auth.exchangeCodeForSession(code);

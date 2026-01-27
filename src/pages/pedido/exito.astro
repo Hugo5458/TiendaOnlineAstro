@@ -164,12 +164,47 @@ try {
             if (itemsError) console.error('Error inserting items:', itemsError);
             
             // 4. Update Stock (Best effort)
+            // 4. Update Stock (Best effort)
             for (const item of items) {
-                const { error: stockError } = await supabaseAdmin.rpc('decrement_stock', {
-                    p_product_id: item.id,
-                    p_quantity: item.quantity
-                });
-                if (stockError) console.error('Stock update failed:', stockError);
+                let stockUpdated = false;
+                
+                // Try RPC first
+                try {
+                    const { data: success, error: stockError } = await supabaseAdmin.rpc('decrement_stock', {
+                        p_product_id: item.id,
+                        p_quantity: item.quantity
+                    });
+                    
+                    if (!stockError && success === true) {
+                        stockUpdated = true;
+                        console.log(`Stock decremented via RPC for ${item.id}`);
+                    } else {
+                        console.warn(`RPC decrement_stock failed for ${item.id}:`, stockError?.message || 'Returned false');
+                    }
+                } catch (rpcErr) {
+                    console.error('RPC call exception:', rpcErr);
+                }
+
+                // Manual fallback if RPC failed
+                if (!stockUpdated) {
+                     console.log(`Attempting manual stock update for ${item.id}`);
+                     const { data: product } = await supabaseAdmin.from('products').select('stock').eq('id', item.id).single();
+                     
+                     if (product) {
+                         const newStock = Math.max(0, product.stock - item.quantity);
+                         // Force update even if RLS tries to block it (we are admin)
+                         const { error: updateError } = await supabaseAdmin
+                            .from('products')
+                            .update({ stock: newStock })
+                            .eq('id', item.id);
+                            
+                         if (updateError) {
+                             console.error('Manual stock update failed:', updateError.message);
+                         } else {
+                             console.log(`Manual stock update success for ${item.id}. New stock: ${newStock}`);
+                         }
+                     }
+                }
             }
         }
         
@@ -191,14 +226,53 @@ try {
         // For simplicity, we ensure user_id is linked.
         
         if (Object.keys(updateFields).length > 0) {
-            await supabaseAdmin
+            const { error: updateError } = await supabaseAdmin
                 .from('orders')
                 .update(updateFields)
                 .eq('id', orderId);
+
+             if (updateError) console.error('Error updating order on success page:', updateError);
         }
 
         orderCreated = true;
-        orderDetails = { id: orderId }; // Might need fetching full details if order_number is needed but fine for now
+        
+        // Fetch full order to be sure we have everything for the email/display
+        const { data: finalOrder } = await supabaseAdmin.from('orders').select('*').eq('id', orderId).single();
+        if (finalOrder) {
+             orderDetails = finalOrder;
+             
+             // Send email explicitly since we are creating the order here (fallback flow)
+             try {
+                const { sendOrderConfirmationEmail } = await import('../../lib/email');
+                const { data: finalItems } = await supabaseAdmin.from('order_items').select('*').eq('order_id', orderId);
+                
+                if (finalItems) {
+                    await sendOrderConfirmationEmail({
+                        orderNumber: finalOrder.order_number,
+                        customerName: finalOrder.customer_name,
+                        customerEmail: finalOrder.customer_email,
+                        items: finalItems.map((item: any) => ({
+                            name: finalOrder.product_name || item.product_name || 'Producto',
+                            quantity: item.quantity,
+                            price: item.unit_price,
+                            total: item.total_price,
+                            image: item.product_image
+                        })),
+                        subtotal: finalOrder.subtotal,
+                        shipping: finalOrder.shipping_cost,
+                        tax: finalOrder.tax,
+                        total: finalOrder.total,
+                        shippingAddress: finalOrder.shipping_address,
+                        date: finalOrder.created_at
+                    });
+                }
+             } catch (emailErr) {
+                 console.error('Error sending email on success page:', emailErr);
+             }
+        } else {
+             orderDetails = { id: orderId };
+        }
+
       }
     }
   }

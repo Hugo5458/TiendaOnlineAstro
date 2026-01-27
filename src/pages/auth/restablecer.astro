@@ -109,22 +109,51 @@ export const prerender = false;
   // Inicialización
   async function init() {
     try {
-        // Verificar sesión o código code
+        // 1. Check for errors in URL (e.g. invalid link)
         const urlParams = new URLSearchParams(window.location.search);
+        const errorDescription = urlParams.get('error_description');
+        if (errorDescription) {
+            throw new Error(errorDescription);
+        }
+
         const code = urlParams.get('code');
 
+        // 2. If PKCE code exists, exchange it
         if (code) {
-            const { error } = await supabase.auth.exchangeCodeForSession(code);
-            if (error) throw error;
+           try {
+             const { error } = await supabase.auth.exchangeCodeForSession(code);
+             if (error) {
+                 // Ignore error if it's just 'Auth session missing' (we'll check session next)
+                 console.warn("Auth exchange warning:", error.message);
+             }
+           } catch (e) {
+             console.error("Auth exchange error:", e);
+           }
         }
 
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError || !session) {
-            throw new Error('No session found');
-        }
+        // 3. Listen for auth state changes (handles Hash fragment flow automatically)
+        const checkSessionPromise = new Promise((resolve, reject) => {
+            const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+                if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && session)) {
+                    resolve(session);
+                }
+            });
 
-        // Si tenemos sesión, mostrar formulario
+            // Also check current session immediately
+            supabase.auth.getSession().then(({ data: { session }, error }) => {
+                if (error) reject(error);
+                if (session) resolve(session);
+            });
+
+            // Timeout after 4 seconds if no session found
+            setTimeout(() => {
+                reject(new Error('No se pudo verificar la sesión. El enlace puede haber expirado.'));
+            }, 8000);
+        });
+
+        await checkSessionPromise;
+
+        // 4. Success: Show form
         loadingState.classList.add('hidden');
         resetForm.classList.remove('hidden');
 
@@ -132,6 +161,15 @@ export const prerender = false;
         console.error('Error init:', error);
         loadingState.classList.add('hidden');
         errorState.classList.remove('hidden');
+        
+        // Mostrar mensaje específico si existe
+        const msg = document.getElementById('error-msg');
+        if (msg && error.message) {
+            // translate common errors
+            if (error.message.includes("expired")) {
+                 msg.nextElementSibling.textContent = "El enlace ha expirado. Por favor solicita uno nuevo.";
+            }
+        }
     }
   }
 

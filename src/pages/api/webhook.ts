@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import Stripe from 'stripe';
-import nodemailer from 'nodemailer';
+
 import { supabase, createServerClient } from '../../lib/supabase';
 
 const stripe = new Stripe(import.meta.env.STRIPE_SECRET_KEY || '', {
@@ -35,7 +35,7 @@ export const POST: APIRoute = async ({ request }) => {
                 const customerPhone = session.customer_details?.phone || '';
 
                 // Prepare shipping address
-                const shipping = session.shipping_details?.address;
+                const shipping = (session as any).shipping_details?.address;
                 const shippingAddress = {
                     line1: shipping?.line1,
                     line2: shipping?.line2,
@@ -78,6 +78,7 @@ export const POST: APIRoute = async ({ request }) => {
                 // Send order confirmation email (non-blocking for webhook success)
                 (async () => {
                     try {
+                        const { sendOrderConfirmationEmail } = await import('../../lib/email');
                         const serverSupabase = createServerClient();
 
                         // Fetch order details and items using service client
@@ -92,51 +93,26 @@ export const POST: APIRoute = async ({ request }) => {
                             .select('*')
                             .eq('order_id', orderId);
 
-                        // Compose email HTML
-                        const formatPrice = (cents: number | null | undefined) => (cents != null ? `€${(cents/100).toFixed(2)}` : '€0.00');
-
-                        let itemsHtml = '';
-                        (orderItems || []).forEach((it: any) => {
-                            itemsHtml += `<tr><td style="padding:6px 8px">${it.product_name}</td><td style="padding:6px 8px;text-align:center">${it.quantity}</td><td style="padding:6px 8px;text-align:right">${formatPrice(it.unit_price)}</td><td style="padding:6px 8px;text-align:right">${formatPrice(it.total_price)}</td></tr>`;
-                        });
-
-                        const html = `
-                        <h2>Gracias por tu pedido, ${orderData?.customer_name || customerName}!</h2>
-                        <p>Hemos recibido tu pedido <strong>${orderData?.order_number || ''}</strong>. A continuación tienes un resumen:</p>
-                        <table style="width:100%;border-collapse:collapse">
-                          <thead><tr><th style="text-align:left">Producto</th><th style="text-align:center">Cant.</th><th style="text-align:right">PVP</th><th style="text-align:right">Total</th></tr></thead>
-                          <tbody>${itemsHtml}</tbody>
-                        </table>
-                        <p>Subtotal: <strong>${formatPrice(orderData?.subtotal)}</strong></p>
-                        <p>Gastos envío: <strong>${formatPrice(orderData?.shipping_cost)}</strong></p>
-                        <p>IVA: <strong>${formatPrice(orderData?.tax)}</strong></p>
-                        <p>Total: <strong>${formatPrice(orderData?.total)}</strong></p>
-                        <h3>Dirección de envío</h3>
-                        <p>${orderData?.shipping_address ? JSON.stringify(orderData.shipping_address) : 'No disponible'}</p>
-                        <p>Si tienes alguna duda, responde este correo o contacta con soporte.</p>
-                        `;
-
-                        // Create transporter using SMTP env vars
-                        const transporter = nodemailer.createTransport({
-                            host: import.meta.env.SMTP_HOST || '',
-                            port: Number(import.meta.env.SMTP_PORT || 587),
-                            secure: (import.meta.env.SMTP_SECURE === 'true') || false,
-                            auth: {
-                                user: import.meta.env.SMTP_USER || '',
-                                pass: import.meta.env.SMTP_PASS || ''
-                            }
-                        });
-
-                        const mailOptions = {
-                            from: import.meta.env.EMAIL_FROM || 'no-reply@fashionstore.local',
-                            to: customerEmail,
-                            bcc: import.meta.env.ORDER_NOTIFICATION_EMAIL || undefined,
-                            subject: `Tu pedido ${orderData?.order_number || ''} - FashionStore`,
-                            text: `Gracias por tu pedido ${orderData?.customer_name || customerName}. Total: ${(orderData?.total/100).toFixed(2)} EUR`,
-                            html
-                        };
-
-                        await transporter.sendMail(mailOptions);
+                        if (orderData && orderItems) {
+                            await sendOrderConfirmationEmail({
+                                orderNumber: orderData.order_number,
+                                customerName: orderData.customer_name,
+                                customerEmail: orderData.customer_email,
+                                items: orderItems.map((item: any) => ({
+                                    name: item.product_name,
+                                    quantity: item.quantity,
+                                    price: item.unit_price,
+                                    total: item.total_price,
+                                    image: item.product_image
+                                })),
+                                subtotal: orderData.subtotal,
+                                shipping: orderData.shipping_cost,
+                                tax: orderData.tax,
+                                total: orderData.total,
+                                shippingAddress: orderData.shipping_address,
+                                date: orderData.created_at
+                            });
+                        }
                     } catch (emailErr) {
                         console.error('Error enviando email de confirmación:', emailErr);
                     }

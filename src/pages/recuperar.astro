@@ -12,18 +12,43 @@ if (Astro.request.method === 'POST') {
   const email = formData.get('email') as string;
 
   if (email) {
-    const { supabase } = await import('../lib/supabase');
-    const siteUrl = import.meta.env.PUBLIC_SITE_URL || Astro.url.origin;
-    
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${siteUrl}/auth/restablecer`,
-    });
+    try {
+      const { createServerClient } = await import('../lib/supabase');
+      const { sendPasswordResetEmail } = await import('../lib/email');
+      
+      // Usar cliente admin para generar el link sin enviar correo por Supabase
+      const supabaseAdmin = createServerClient();
+      const siteUrl = import.meta.env.PUBLIC_SITE_URL || Astro.url.origin;
 
-    if (resetError) {
-      error = 'Hubo un error al enviar el correo. Por favor intenta de nuevo.';
-      console.error(resetError);
-    } else {
-      success = true;
+      const { data, error: generateError } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'recovery',
+        email,
+        options: {
+          redirectTo: `${siteUrl}/auth/restablecer`
+        }
+      });
+
+      if (generateError) throw generateError;
+
+      if (data?.properties?.action_link) {
+         // Enviar correo con nuestro propio SMTP
+         await sendPasswordResetEmail(email, data.properties.action_link);
+         success = true;
+      } else {
+         throw new Error('No se pudo generar el enlace de recuperación.');
+      }
+
+    } catch (err: any) {
+      console.error('Reset password error:', err);
+      // Mensajes amigables
+      if (err.message?.includes('SMTP')) {
+         error = 'Error de configuración de correo (SMTP). Contacta al administrador.';
+      } else if (err.message?.includes('Phone')) { 
+         // A veces supabase devuelve error de phone si el usuario no tiene email confirmado? No suele pasar en recovery
+         error = err.message;
+      } else {
+         error = err.message || 'Hubo un error al enviar el correo. Por favor intenta de nuevo.';
+      }
     }
   } else {
     error = 'Por favor ingresa tu correo electrónico.';

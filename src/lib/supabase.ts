@@ -29,6 +29,7 @@ export interface Category {
     slug: string;
     description: string | null;
     image_url: string | null;
+    parent_id: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -287,7 +288,7 @@ const demoProducts: Product[] = [
         price: 13900, compare_at_price: 17900, stock: 12, category_id: '7',
         category: demoCategories[6],
         images: ['https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800'],
-        sizes: ['XS','S','M','L'], colors: ['Negro'],
+        sizes: ['XS', 'S', 'M', 'L'], colors: ['Negro'],
         is_featured: true, is_flash_offer: false, is_active: true,
         created_at: '', updated_at: ''
     },

@@ -19,7 +19,22 @@ const isLoggedIn = !!accessToken;
 
 const categories = await getCategories();
 // Separar categorías principales de subcategorías
+// Identificar categorías raíz (Hombre/Mujer)
+const hombreCat = categories.find(c => c.slug === 'hombre');
+const mujerCat = categories.find(c => c.slug === 'mujer');
+
 const mainCategories = categories.filter(c => c.slug === 'hombre' || c.slug === 'mujer');
+
+// Lógica híbrida: Si tienen parent_id, úsalo. Si no, usa slugs hardcodeados (fallback)
+const getSubcats = (parentId: string | undefined, hardcodedSlugs: string[]) => {
+  const byParent = parentId ? categories.filter(c => c.parent_id === parentId) : [];
+  if (byParent.length > 0) return byParent;
+  return categories.filter(c => hardcodedSlugs.includes(c.slug));
+};
+
+const hombreSubcats = getSubcats(hombreCat?.id, ['camisas', 'pantalones', 'camisetas', 'chalecos', 'trajes', 'accesorios', 'camisas-hombre', 'pantalones-hombre', 'calzado-hombre']);
+const mujerSubcats = getSubcats(mujerCat?.id, ['vestidos', 'blusas', 'faldas', 'calzado-mujer', 'accesorios', 'camisas', 'pantalones']);
+
 const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== 'mujer').slice(0, 8);
 ---
 
@@ -213,7 +228,7 @@ const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== '
             <div class="space-y-6">
               <div>
                 <p class="text-xs uppercase tracking-widest text-gray-400 mb-4">Hombre</p>
-                {categories.filter(c => ['camisas', 'pantalones', 'camisetas', 'chalecos', 'trajes', 'accesorios', 'camisas-hombre', 'pantalones-hombre', 'calzado-hombre'].includes(c.slug)).map((category) => (
+                {hombreSubcats.map((category) => (
                   <a 
                     href={`/categoria/${category.slug}`}
                     class="block text-sm uppercase tracking-wider text-gray-600 hover:text-black transition-colors mb-3"
@@ -225,7 +240,7 @@ const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== '
 
               <div>
                 <p class="text-xs uppercase tracking-widest text-gray-400 mb-4">Mujer</p>
-                {categories.filter(c => ['vestidos', 'blusas', 'faldas', 'calzado-mujer', 'accesorios', 'camisas', 'pantalones'].includes(c.slug)).map((category) => (
+                {mujerSubcats.map((category) => (
                   <a 
                     href={`/categoria/${category.slug}`}
                     class="block text-sm uppercase tracking-wider text-gray-600 hover:text-black transition-colors mb-3"

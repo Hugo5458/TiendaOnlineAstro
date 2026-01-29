@@ -102,24 +102,24 @@ export interface SiteSetting {
 }
 
 // Demo data for when Supabase is not configured
-const demoCategories: Category[] = [
+export const demoCategories: Category[] = [
     // Categorías principales
-    { id: '1', name: '👔 Hombre', slug: 'hombre', description: 'Moda masculina elegante y sofisticada', image_url: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800', created_at: '', updated_at: '' },
-    { id: '2', name: '👗 Mujer', slug: 'mujer', description: 'Moda femenina exclusiva y trendy', image_url: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800', created_at: '', updated_at: '' },
+    { id: '1', name: '👔 Hombre', slug: 'hombre', description: 'Moda masculina elegante y sofisticada', image_url: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800', created_at: '', updated_at: '', parent_id: null },
+    { id: '2', name: '👗 Mujer', slug: 'mujer', description: 'Moda femenina exclusiva y trendy', image_url: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800', created_at: '', updated_at: '', parent_id: null },
     // Subcategorías Hombre
-    { id: '3', name: 'Camisas Hombre', slug: 'camisas-hombre', description: 'Camisas elegantes para él', image_url: null, created_at: '', updated_at: '' },
-    { id: '4', name: 'Pantalones Hombre', slug: 'pantalones-hombre', description: 'Pantalones de vestir y casual', image_url: null, created_at: '', updated_at: '' },
-    { id: '5', name: 'Trajes', slug: 'trajes', description: 'Trajes completos premium', image_url: null, created_at: '', updated_at: '' },
-    { id: '6', name: 'Calzado Hombre', slug: 'calzado-hombre', description: 'Zapatos y sneakers', image_url: null, created_at: '', updated_at: '' },
+    { id: '3', name: 'Camisas Hombre', slug: 'camisas-hombre', description: 'Camisas elegantes para él', image_url: null, created_at: '', updated_at: '', parent_id: '1' },
+    { id: '4', name: 'Pantalones Hombre', slug: 'pantalones-hombre', description: 'Pantalones de vestir y casual', image_url: null, created_at: '', updated_at: '', parent_id: '1' },
+    { id: '5', name: 'Trajes', slug: 'trajes', description: 'Trajes completos premium', image_url: null, created_at: '', updated_at: '', parent_id: '1' },
+    { id: '6', name: 'Calzado Hombre', slug: 'calzado-hombre', description: 'Zapatos y sneakers', image_url: null, created_at: '', updated_at: '', parent_id: '1' },
     // Subcategorías Mujer
-    { id: '7', name: 'Vestidos', slug: 'vestidos', description: 'Vestidos para toda ocasión', image_url: null, created_at: '', updated_at: '' },
-    { id: '8', name: 'Blusas', slug: 'blusas', description: 'Blusas y tops elegantes', image_url: null, created_at: '', updated_at: '' },
-    { id: '9', name: 'Faldas', slug: 'faldas', description: 'Faldas modernas y clásicas', image_url: null, created_at: '', updated_at: '' },
-    { id: '10', name: 'Calzado Mujer', slug: 'calzado-mujer', description: 'Tacones, sandalias y más', image_url: null, created_at: '', updated_at: '' },
-    { id: '11', name: 'Accesorios', slug: 'accesorios', description: 'Bolsos, cinturones y complementos', image_url: null, created_at: '', updated_at: '' },
+    { id: '7', name: 'Vestidos', slug: 'vestidos', description: 'Vestidos para toda ocasión', image_url: null, created_at: '', updated_at: '', parent_id: '2' },
+    { id: '8', name: 'Blusas', slug: 'blusas', description: 'Blusas y tops elegantes', image_url: null, created_at: '', updated_at: '', parent_id: '2' },
+    { id: '9', name: 'Faldas', slug: 'faldas', description: 'Faldas modernas y clásicas', image_url: null, created_at: '', updated_at: '', parent_id: '2' },
+    { id: '10', name: 'Calzado Mujer', slug: 'calzado-mujer', description: 'Tacones, sandalias y más', image_url: null, created_at: '', updated_at: '', parent_id: '2' },
+    { id: '11', name: 'Accesorios', slug: 'accesorios', description: 'Bolsos, cinturones y complementos', image_url: null, created_at: '', updated_at: '', parent_id: '2' },
 ];
 
-const demoProducts: Product[] = [
+export const demoProducts: Product[] = [
     // ========== PRODUCTOS HOMBRE ==========
     {
         id: '1', name: 'Camisa Oxford Azul Premium', slug: 'camisa-oxford-azul',

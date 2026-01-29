@@ -164,45 +164,62 @@ try {
             if (itemsError) console.error('Error inserting items:', itemsError);
             
             // 4. Update Stock (Best effort)
-            // 4. Update Stock (Best effort)
+            // 4. Update Stock (ROBUST IMPLEMENTATION)
+            console.log('🔄 Iniciando actualización de stock para', items.length, 'items');
+            
             for (const item of items) {
+                const productId = item.id;
+                const quantity = Number(item.quantity) || 1;
                 let stockUpdated = false;
                 
+                console.log(`📉 Procesando stock para producto ${productId}, cantidad: ${quantity}`);
+
                 // Try RPC first
                 try {
                     const { data: success, error: stockError } = await supabaseAdmin.rpc('decrement_stock', {
-                        p_product_id: item.id,
-                        p_quantity: item.quantity
+                        p_product_id: productId,
+                        p_quantity: quantity
                     });
                     
                     if (!stockError && success === true) {
                         stockUpdated = true;
-                        console.log(`Stock decremented via RPC for ${item.id}`);
+                        console.log(`✅ Stock decrementado vía RPC para ${productId}`);
                     } else {
-                        console.warn(`RPC decrement_stock failed for ${item.id}:`, stockError?.message || 'Returned false');
+                        console.warn(`⚠️ RPC decrement_stock falló para ${productId}:`, stockError?.message || 'Retornó false');
                     }
                 } catch (rpcErr) {
-                    console.error('RPC call exception:', rpcErr);
+                    console.error('❌ Excepción llamada RPC:', rpcErr);
                 }
 
                 // Manual fallback if RPC failed
                 if (!stockUpdated) {
-                     console.log(`Attempting manual stock update for ${item.id}`);
-                     const { data: product } = await supabaseAdmin.from('products').select('stock').eq('id', item.id).single();
+                     console.log(`🛠️ Intentando actualización manual de stock para ${productId}`);
+                     
+                     const { data: product, error: fetchError } = await supabaseAdmin
+                        .from('products')
+                        .select('stock, name')
+                        .eq('id', productId)
+                        .single();
                      
                      if (product) {
-                         const newStock = Math.max(0, product.stock - item.quantity);
-                         // Force update even if RLS tries to block it (we are admin)
+                         const currentStock = Number(product.stock);
+                         const newStock = Math.max(0, currentStock - quantity);
+                         
+                         console.log(`   Stock actual: ${currentStock}, Nuevo stock: ${newStock}`);
+                         
                          const { error: updateError } = await supabaseAdmin
                             .from('products')
                             .update({ stock: newStock })
-                            .eq('id', item.id);
+                            .eq('id', productId);
                             
                          if (updateError) {
-                             console.error('Manual stock update failed:', updateError.message);
+                             console.error(`❌ Actualización manual falló para ${productId}:`, updateError.message);
                          } else {
-                             console.log(`Manual stock update success for ${item.id}. New stock: ${newStock}`);
+                             console.log(`✅ Actualización manual exitosa para ${product.name} (${productId})`);
+                             stockUpdated = true;
                          }
+                     } else {
+                        console.error(`❌ No se encontró el producto ${productId} para actualizar stock`, fetchError);
                      }
                 }
             }

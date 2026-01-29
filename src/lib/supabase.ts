@@ -305,9 +305,19 @@ const demoProducts: Product[] = [
 ];
 
 // Helper functions
+// Simple in-memory cache for categories
+let categoriesCache: Category[] | null = null;
+let lastFetchTime = 0;
+const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
+
 export async function getCategories(): Promise<Category[]> {
     if (!isSupabaseConfigured()) {
         return demoCategories;
+    }
+
+    const now = Date.now();
+    if (categoriesCache && (now - lastFetchTime < CACHE_TTL)) {
+        return categoriesCache;
     }
 
     try {
@@ -317,7 +327,11 @@ export async function getCategories(): Promise<Category[]> {
             .order('name');
 
         if (error) throw error;
-        return data || [];
+
+        categoriesCache = data || [];
+        lastFetchTime = now;
+
+        return categoriesCache;
     } catch {
         return demoCategories;
     }

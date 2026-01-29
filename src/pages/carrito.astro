@@ -86,6 +86,45 @@ export const prerender = false; // SSR for cart
                     Gratis
                   </span>
                 </div>
+                
+                <!-- Discount Code Section -->
+                <div class="pt-4 border-t border-primary-100">
+                  <label class="text-sm font-medium text-primary-700 mb-2 block">Código de descuento</label>
+                  <div class="flex gap-2">
+                    <input 
+                      type="text" 
+                      id="discount-code-input" 
+                      placeholder="Introduce tu código"
+                      class="flex-1 px-3 py-2 border border-primary-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all uppercase"
+                    />
+                    <button 
+                      id="apply-discount-btn"
+                      class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Aplicar
+                    </button>
+                  </div>
+                  <div id="discount-message" class="mt-2 text-sm hidden"></div>
+                  
+                  <!-- Applied Discount Display -->
+                  <div id="applied-discount" class="hidden mt-3 p-3 bg-success-50 border border-success-200 rounded-lg">
+                    <div class="flex justify-between items-center">
+                      <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
+                        </svg>
+                        <span class="text-success-800 font-medium" id="discount-code-display"></span>
+                      </div>
+                      <button id="remove-discount-btn" class="text-success-700 hover:text-danger-600 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    <p class="text-success-700 text-sm mt-1" id="discount-description"></p>
+                    <p class="text-success-600 font-bold mt-1">-<span id="discount-amount-display"></span></p>
+                  </div>
+                </div>
               </div>
               
               <div class="mb-8">
@@ -246,51 +285,248 @@ export const prerender = false; // SSR for cart
     }
     
     if (subtotalEl) subtotalEl.textContent = formatPrice(subtotal);
-    if (totalEl) totalEl.textContent = formatPrice(subtotal);
+    
+    // Update total with discount
+    const currentDiscount = appliedDiscount;
+    const finalTotal = currentDiscount ? Math.max(0, subtotal - currentDiscount.discount_amount) : subtotal;
+    if (totalEl) totalEl.textContent = formatPrice(finalTotal);
   }
   
-  // Checkout handler
+  // ============= Discount Code Logic =============
+  let appliedDiscount: {
+    code: string;
+    discount_type: string;
+    discount_value: number;
+    discount_amount: number;
+    description: string;
+  } | null = null;
+  
+  const discountInput = document.getElementById('discount-code-input') as HTMLInputElement;
+  const applyDiscountBtn = document.getElementById('apply-discount-btn');
+  const discountMessage = document.getElementById('discount-message');
+  const appliedDiscountEl = document.getElementById('applied-discount');
+  const discountCodeDisplay = document.getElementById('discount-code-display');
+  const discountDescription = document.getElementById('discount-description');
+  const discountAmountDisplay = document.getElementById('discount-amount-display');
+  const removeDiscountBtn = document.getElementById('remove-discount-btn');
+  
+  async function validateAndApplyDiscount() {
+    const code = discountInput?.value.trim().toUpperCase();
+    if (!code) {
+      showDiscountMessage('Por favor, introduce un código', 'error');
+      return;
+    }
+    
+    const subtotal = cartSubtotal.get();
+    
+    // Disable button while processing
+    if (applyDiscountBtn) {
+      applyDiscountBtn.textContent = 'Validando...';
+      (applyDiscountBtn as HTMLButtonElement).disabled = true;
+    }
+    
+    try {
+      const response = await fetch('/api/discount/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, subtotal })
+      });
+      
+      const data = await response.json();
+      
+      if (data.valid) {
+        appliedDiscount = {
+          code: data.code,
+          discount_type: data.discount_type,
+          discount_value: data.discount_value,
+          discount_amount: data.discount_amount,
+          description: data.description
+        };
+        
+        // Show applied discount
+        showAppliedDiscount();
+        hideDiscountMessage();
+        
+        // Update totals
+        renderCartPage();
+        
+        // Save to localStorage
+        localStorage.setItem('fashionstore-discount', JSON.stringify(appliedDiscount));
+      } else {
+        showDiscountMessage(data.error || 'Código no válido', 'error');
+      }
+    } catch (error) {
+      console.error('Error validating discount:', error);
+      showDiscountMessage('Error al validar el código', 'error');
+    } finally {
+      if (applyDiscountBtn) {
+        applyDiscountBtn.textContent = 'Aplicar';
+        (applyDiscountBtn as HTMLButtonElement).disabled = false;
+      }
+    }
+  }
+  
+  function showDiscountMessage(message: string, type: 'success' | 'error') {
+    if (discountMessage) {
+      discountMessage.textContent = message;
+      discountMessage.className = `mt-2 text-sm ${type === 'error' ? 'text-danger-600' : 'text-success-600'}`;
+      discountMessage.classList.remove('hidden');
+    }
+  }
+  
+  function hideDiscountMessage() {
+    discountMessage?.classList.add('hidden');
+  }
+  
+  function showAppliedDiscount() {
+    if (!appliedDiscount) return;
+    
+    if (discountCodeDisplay) discountCodeDisplay.textContent = appliedDiscount.code;
+    if (discountDescription) discountDescription.textContent = appliedDiscount.description;
+    if (discountAmountDisplay) discountAmountDisplay.textContent = formatPrice(appliedDiscount.discount_amount);
+    
+    appliedDiscountEl?.classList.remove('hidden');
+    
+    // Hide input section
+    if (discountInput) discountInput.disabled = true;
+    if (applyDiscountBtn) (applyDiscountBtn as HTMLButtonElement).disabled = true;
+  }
+  
+  function removeDiscount() {
+    appliedDiscount = null;
+    
+    // Hide applied discount
+    appliedDiscountEl?.classList.add('hidden');
+    
+    // Re-enable input
+    if (discountInput) {
+      discountInput.disabled = false;
+      discountInput.value = '';
+    }
+    if (applyDiscountBtn) (applyDiscountBtn as HTMLButtonElement).disabled = false;
+    
+    // Update totals
+    renderCartPage();
+    
+    // Remove from localStorage
+    localStorage.removeItem('fashionstore-discount');
+  }
+  
+  // Load saved discount on page load
+  function loadSavedDiscount() {
+    try {
+      const saved = localStorage.getItem('fashionstore-discount');
+      if (saved) {
+        const discount = JSON.parse(saved);
+        // Re-validate the discount with current subtotal
+        const subtotal = cartSubtotal.get();
+        
+        fetch('/api/discount/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: discount.code, subtotal })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.valid) {
+            appliedDiscount = {
+              code: data.code,
+              discount_type: data.discount_type,
+              discount_value: data.discount_value,
+              discount_amount: data.discount_amount,
+              description: data.description
+            };
+            showAppliedDiscount();
+            renderCartPage();
+          } else {
+            localStorage.removeItem('fashionstore-discount');
+          }
+        })
+        .catch(() => {
+          localStorage.removeItem('fashionstore-discount');
+        });
+      }
+    } catch {
+      localStorage.removeItem('fashionstore-discount');
+    }
+  }
+  
+  // Event listeners for discount
+  applyDiscountBtn?.addEventListener('click', validateAndApplyDiscount);
+  discountInput?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      validateAndApplyDiscount();
+    }
+  });
+  removeDiscountBtn?.addEventListener('click', removeDiscount);
+  
+  // Recalculate discount when cart changes
+  cartSubtotal.subscribe((newSubtotal) => {
+    if (appliedDiscount) {
+      // Recalculate discount amount based on new subtotal
+      if (appliedDiscount.discount_type === 'percentage') {
+        appliedDiscount.discount_amount = Math.floor((newSubtotal * appliedDiscount.discount_value) / 100);
+      }
+      // For fixed, amount stays the same but cap at subtotal
+      appliedDiscount.discount_amount = Math.min(appliedDiscount.discount_amount, newSubtotal);
+      
+      if (discountAmountDisplay) {
+        discountAmountDisplay.textContent = formatPrice(appliedDiscount.discount_amount);
+      }
+    }
+  });
+  
+  // ============= Checkout handler =============
   const checkoutBtn = document.querySelector('a[href="/checkout"]') as HTMLButtonElement | null;
   if (checkoutBtn) {
     // Change to button behavior
     checkoutBtn.addEventListener('click', async (e) => {
       e.preventDefault();
+      console.log('Iniciando checkout...');
       
       const items = cartItems.get();
       if (items.length === 0) return;
       
+      const originalContent = checkoutBtn.innerHTML;
       checkoutBtn.disabled = true;
-      checkoutBtn.textContent = 'Procesando...';
+      checkoutBtn.innerHTML = '<span class="flex items-center justify-center gap-2"><svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Procesando...</span>';
       
       try {
         // Get user info from localStorage if available
         const userStr = localStorage.getItem('fashionstore-user');
         const user = userStr ? JSON.parse(userStr) : null;
         
+        console.log('Enviando petición a /api/checkout');
         const response = await fetch('/api/checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             items,
             customerEmail: user?.email || '', // Stripe will ask if empty
-            customerName: user?.username || 'Invitado'
+            customerName: user?.username || 'Invitado',
+            discountCode: appliedDiscount?.code || null
           })
         });
         
         const data = await response.json();
+        console.log('Respuesta checkout:', data);
         
-        if (data.url) {
+        if (response.ok && data.url) {
+          // Clear discount from localStorage on successful checkout start
+          localStorage.removeItem('fashionstore-discount');
           window.location.href = data.url;
         } else {
-          alert('Error: ' + (data.error || 'No se pudo iniciar el pago'));
+          console.error('Error checkout:', data);
+          alert('Error: ' + (data.error || 'No se pudo iniciar el pago. Revisa la consola.'));
           checkoutBtn.disabled = false;
-          checkoutBtn.textContent = 'Finalizar compra';
+          checkoutBtn.innerHTML = originalContent;
         }
       } catch (error) {
-        console.error('Checkout error:', error);
-        alert('Error conectando con el servidor de pagos');
+        console.error('Checkout exception:', error);
+        alert('Error conectando con el servidor de pagos. Revisa tu conexión.');
         checkoutBtn.disabled = false;
-        checkoutBtn.textContent = 'Finalizar compra';
+        checkoutBtn.innerHTML = originalContent;
       }
     });
   }
@@ -300,4 +536,7 @@ export const prerender = false; // SSR for cart
   
   // Initial render
   renderCartPage();
+  
+  // Load any saved discount
+  loadSavedDiscount();
 </script>

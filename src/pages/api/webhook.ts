@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import Stripe from 'stripe';
 
-import { supabase, createServerClient } from '../../lib/supabase';
+import { createServerClient } from '../../lib/supabase';
 
 const stripe = new Stripe(import.meta.env.STRIPE_SECRET_KEY || '', {
     apiVersion: '2023-10-16' as any,
@@ -33,6 +33,11 @@ export const POST: APIRoute = async ({ request }) => {
                 const customerEmail = session.customer_details?.email || '';
                 const customerName = metadata.customerName || session.customer_details?.name || 'Cliente';
                 const customerPhone = session.customer_details?.phone || '';
+                const discountCode = metadata.discountCode || null;
+                const discountAmount = session.total_details?.amount_discount || 0;
+
+                // Use server client with admin privileges
+                const supabaseAdmin = createServerClient();
 
                 // Prepare shipping address
                 const shipping = (session as any).shipping_details?.address;
@@ -45,9 +50,8 @@ export const POST: APIRoute = async ({ request }) => {
                     country: shipping?.country,
                 };
 
-                // Call Supabase RPC to process order
-                // Note: Using service role key for this is recommended if RLS is strict
-                const { data: orderId, error } = await supabase.rpc('process_order', {
+                // Call Supabase RPC to process order (uses SECURITY DEFINER, handles stock)
+                const { data: orderId, error } = await supabaseAdmin.rpc('process_order', {
                     p_customer_email: customerEmail,
                     p_customer_name: customerName,
                     p_customer_phone: customerPhone,
@@ -57,7 +61,13 @@ export const POST: APIRoute = async ({ request }) => {
                         quantity: i.quantity,
                         size: i.size,
                         color: i.color || null
-                    }))
+                    })),
+                    p_shipping_cost: session.total_details?.amount_shipping || 0,
+                    p_tax: session.total_details?.amount_tax || 0,
+                    p_discount_amount: discountAmount,
+                    p_discount_code: discountCode,
+                    p_payment_intent_id: session.payment_intent as string,
+                    p_total: session.amount_total || 0
                 });
 
                 if (error) {
@@ -66,7 +76,7 @@ export const POST: APIRoute = async ({ request }) => {
                 }
 
                 // Update payment status
-                await supabase
+                await supabaseAdmin
                     .from('orders')
                     .update({
                         payment_status: 'paid',
@@ -79,16 +89,15 @@ export const POST: APIRoute = async ({ request }) => {
                 (async () => {
                     try {
                         const { sendOrderConfirmationEmail } = await import('../../lib/email');
-                        const serverSupabase = createServerClient();
 
                         // Fetch order details and items using service client
-                        const { data: orderData } = await serverSupabase
+                        const { data: orderData } = await supabaseAdmin
                             .from('orders')
                             .select('*')
                             .eq('id', orderId)
                             .single();
 
-                        const { data: orderItems } = await serverSupabase
+                        const { data: orderItems } = await supabaseAdmin
                             .from('order_items')
                             .select('*')
                             .eq('order_id', orderId);

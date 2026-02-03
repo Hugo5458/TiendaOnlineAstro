@@ -46,14 +46,14 @@ const statusLabel = (status: string) => {
 
 const statusIcon = (status: string) => {
   switch (status) {
-    case 'paid': return '✓';
-    case 'processing': return '⚙';
-    case 'shipped': return '🚚';
-    case 'delivered': return '📦';
-    case 'cancelled': return '✕';
-    case 'refunded': return '↩';
+    case 'paid': return '';
+    case 'processing': return '';
+    case 'shipped': return '';
+    case 'delivered': return '';
+    case 'cancelled': return '';
+    case 'refunded': return '';
     case 'pending':
-    default: return '⏳';
+    default: return '';
   }
 };
 
@@ -166,13 +166,13 @@ const paidOrders = allOrders.filter(o => o.status === 'paid').length;
           class="appearance-none px-4 py-3 pr-10 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all duration-200 cursor-pointer min-w-[180px]"
         >
           <option value="" selected={!statusFilter}>Todos los estados</option>
-          <option value="pending" selected={statusFilter === 'pending'}>⏳ Pendiente</option>
-          <option value="paid" selected={statusFilter === 'paid'}>✓ Pagado</option>
-          <option value="processing" selected={statusFilter === 'processing'}>⚙ Procesando</option>
-          <option value="shipped" selected={statusFilter === 'shipped'}>🚚 Enviado</option>
-          <option value="delivered" selected={statusFilter === 'delivered'}>📦 Entregado</option>
-          <option value="cancelled" selected={statusFilter === 'cancelled'}>✕ Cancelado</option>
-          <option value="refunded" selected={statusFilter === 'refunded'}>↩ Reembolsado</option>
+          <option value="pending" selected={statusFilter === 'pending'}>Pendiente</option>
+          <option value="paid" selected={statusFilter === 'paid'}>Pagado</option>
+          <option value="processing" selected={statusFilter === 'processing'}>Procesando</option>
+          <option value="shipped" selected={statusFilter === 'shipped'}>Enviado</option>
+          <option value="delivered" selected={statusFilter === 'delivered'}>Entregado</option>
+          <option value="cancelled" selected={statusFilter === 'cancelled'}>Cancelado</option>
+          <option value="refunded" selected={statusFilter === 'refunded'}>Reembolsado</option>
         </select>
         <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
           <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -259,7 +259,7 @@ const paidOrders = allOrders.filter(o => o.status === 'paid').length;
                       ? 'bg-emerald-100 text-emerald-700' 
                       : 'bg-gray-100 text-gray-600'
                   }`}>
-                    {order.payment_status === 'paid' ? '✓ Pagado' : order.payment_status || '-'}
+                    {order.payment_status === 'paid' ? 'Pagado' : order.payment_status || '-'}
                   </span>
                 </td>
                 <td class="px-6 py-4 text-right">

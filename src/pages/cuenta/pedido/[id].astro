@@ -1,0 +1,658 @@
+---
+import PublicLayout from '../../../layouts/PublicLayout.astro';
+import Button from '../../../components/ui/Button.astro';
+import { supabase, isSupabaseConfigured, createServerClient } from '../../../lib/supabase';
+
+export const prerender = false;
+
+const { id } = Astro.params;
+
+const authToken = Astro.cookies.get('sb-access-token')?.value;
+if (!authToken && isSupabaseConfigured()) {
+  return Astro.redirect('/login?redirect=/cuenta/pedidos');
+}
+
+// Get order details
+let order: any = null;
+let userEmail = '';
+
+if (isSupabaseConfigured() && authToken) {
+  const { data: { user } } = await supabase.auth.getUser(authToken);
+  userEmail = user?.email || '';
+  
+  if (userEmail && id) {
+    const serverClient = createServerClient();
+    const { data, error } = await serverClient
+      .from('orders')
+      .select('*, order_items(*)')
+      .eq('id', id)
+      .eq('customer_email', userEmail)
+      .single();
+    
+    if (!error && data) {
+      order = data;
+    }
+  }
+} else {
+  // Demo order
+  order = {
+    id: 'demo-order-1',
+    order_number: 'ORD-2026-001',
+    customer_email: 'demo@example.com',
+    customer_name: 'Usuario Demo',
+    status: 'delivered',
+    total: 15900,
+    subtotal: 12800,
+    tax: 2687,
+    shipping: 413,
+    created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    shipping_address: {
+      line1: 'Calle Ejemplo 123',
+      city: 'Madrid',
+      postal_code: '28001',
+      country: 'España'
+    },
+    order_items: [
+      { product_name: 'Camisa Oxford Azul', quantity: 1, unit_price: 5900 },
+      { product_name: 'Pantalón Chino', quantity: 1, unit_price: 6900 }
+    ]
+  };
+}
+
+// If order not found
+if (!order) {
+  return Astro.redirect('/cuenta/pedidos');
+}
+
+// Status configuration
+const statusConfig: Record<string, { label: string; color: string; icon: string; bgColor: string; description: string }> = {
+  pending: { 
+    label: 'Pendiente', 
+    color: 'text-amber-700', 
+    bgColor: 'bg-amber-50 border-amber-200',
+    icon: '',
+    description: 'Tu pedido está pendiente de pago'
+  },
+  paid: { 
+    label: 'Pagado', 
+    color: 'text-blue-700', 
+    bgColor: 'bg-blue-50 border-blue-200',
+    icon: '',
+    description: 'Pago recibido. Preparando tu pedido...'
+  },
+  processing: { 
+    label: 'Procesando', 
+    color: 'text-indigo-700', 
+    bgColor: 'bg-indigo-50 border-indigo-200',
+    icon: '',
+    description: 'Tu pedido está siendo preparado'
+  },
+  shipped: { 
+    label: 'Enviado', 
+    color: 'text-purple-700', 
+    bgColor: 'bg-purple-50 border-purple-200',
+    icon: '',
+    description: 'Tu pedido está en camino'
+  },
+  delivered: { 
+    label: 'Entregado', 
+    color: 'text-success-700', 
+    bgColor: 'bg-success-50 border-success-200',
+    icon: '',
+    description: '¡Pedido entregado correctamente!'
+  },
+  cancelled: { 
+    label: 'Cancelado', 
+    color: 'text-danger-700', 
+    bgColor: 'bg-danger-50 border-danger-200',
+    icon: '',
+    description: 'Este pedido ha sido cancelado'
+  },
+  return_pending: { 
+    label: 'Devolución en Proceso', 
+    color: 'text-orange-700', 
+    bgColor: 'bg-orange-50 border-orange-200',
+    icon: '',
+    description: 'Esperando recibir el paquete de devolución'
+  },
+  refunded: { 
+    label: 'Reembolsado', 
+    color: 'text-gray-700', 
+    bgColor: 'bg-gray-50 border-gray-200',
+    icon: '',
+    description: 'Reembolso procesado correctamente'
+  }
+};
+
+const status = statusConfig[order.status] || statusConfig.pending;
+const canCancel = ['pending', 'paid'].includes(order.status);
+const canRequestReturn = order.status === 'delivered';
+
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString('es-ES', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function formatPrice(cents: number) {
+  return (cents / 100).toFixed(2);
+}
+---
+
+<PublicLayout title={`Pedido #${order.order_number || order.id.slice(0, 8)} | FashionStore`}>
+  <div class="min-h-screen bg-gradient-to-b from-primary-50 via-white to-primary-50/50">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+      <!-- Breadcrumb -->
+      <nav class="text-sm text-primary-600 mb-8 flex items-center gap-2 animate-slide-down">
+        <a href="/" class="hover:text-primary-900 transition-colors">Inicio</a>
+        <span class="text-primary-300">/</span>
+        <a href="/cuenta" class="hover:text-primary-900 transition-colors">Mi Cuenta</a>
+        <span class="text-primary-300">/</span>
+        <a href="/cuenta/pedidos" class="hover:text-primary-900 transition-colors">Mis Pedidos</a>
+        <span class="text-primary-300">/</span>
+        <span class="text-primary-900 font-semibold">#{order.order_number || order.id.slice(0, 8)}</span>
+      </nav>
+
+      <!-- Header -->
+      <div class="mb-8 animate-slide-down">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 class="text-3xl lg:text-4xl font-serif font-bold text-primary-950 mb-2">
+              Pedido #{order.order_number || order.id.slice(0, 8).toUpperCase()}
+            </h1>
+            <p class="text-primary-700">
+              Realizado el {formatDate(order.created_at)}
+            </p>
+          </div>
+          
+          <!-- Status Badge Large -->
+          <div class={`inline-flex items-center gap-3 px-6 py-3 rounded-2xl text-lg font-semibold border-2 ${status.bgColor} ${status.color}`}>
+            <span class="text-2xl">{status.icon}</span>
+            <div>
+              <div>{status.label}</div>
+              <div class="text-xs font-normal opacity-75">{status.description}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid lg:grid-cols-3 gap-8">
+        <!-- Main Content -->
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Order Items -->
+          <div class="bg-white rounded-2xl shadow-md border-2 border-primary-200/50 overflow-hidden animate-slide-up">
+            <div class="bg-gradient-to-r from-primary-50 to-primary-100/50 px-6 py-4 border-b border-primary-200/50">
+              <h2 class="font-bold text-primary-950 flex items-center gap-2">
+                <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                Artículos del pedido
+              </h2>
+            </div>
+            <div class="p-6">
+              <div class="space-y-4">
+                {order.order_items?.map((item: any) => (
+                  <div class="flex items-center justify-between py-4 border-b border-primary-100 last:border-0">
+                    <div class="flex items-center gap-4">
+                      <div class="w-16 h-16 bg-primary-100 rounded-xl flex items-center justify-center">
+                        <svg class="w-8 h-8 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                      </div>
+                      <div>
+                        <p class="font-semibold text-primary-900">{item.product_name}</p>
+                        <p class="text-sm text-primary-600">Cantidad: {item.quantity}</p>
+                        <p class="text-sm text-primary-600">
+                          Precio unitario: €{formatPrice(item.unit_price)}
+                        </p>
+                      </div>
+                    </div>
+                    <p class="text-xl font-bold text-primary-900">
+                      €{formatPrice(item.unit_price * item.quantity)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <!-- Shipping Address -->
+          {order.shipping_address && (
+            <div class="bg-white rounded-2xl shadow-md border-2 border-primary-200/50 overflow-hidden animate-slide-up" style="animation-delay: 100ms">
+              <div class="bg-gradient-to-r from-primary-50 to-primary-100/50 px-6 py-4 border-b border-primary-200/50">
+                <h2 class="font-bold text-primary-950 flex items-center gap-2">
+                  <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  Dirección de envío
+                </h2>
+              </div>
+              <div class="p-6">
+                <div class="text-primary-700 leading-relaxed">
+                  <p class="font-semibold text-primary-900">{order.customer_name}</p>
+                  <p>{order.shipping_address.line1}</p>
+                  {order.shipping_address.line2 && <p>{order.shipping_address.line2}</p>}
+                  <p>
+                    {order.shipping_address.postal_code} {order.shipping_address.city}
+                  </p>
+                  <p>{order.shipping_address.state} {order.shipping_address.country}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <!-- Actions -->
+          <div class="bg-white rounded-2xl shadow-md border-2 border-primary-200/50 overflow-hidden animate-slide-up" style="animation-delay: 200ms">
+            <div class="bg-gradient-to-r from-primary-50 to-primary-100/50 px-6 py-4 border-b border-primary-200/50">
+              <h2 class="font-bold text-primary-950 flex items-center gap-2">
+                  <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                Acciones
+              </h2>
+            </div>
+            <div class="p-6">
+              <div class="flex flex-wrap gap-4">
+                {canCancel && (
+                  <button 
+                    class="cancel-order-btn px-6 py-3 bg-danger-50 hover:bg-danger-100 text-danger-700 font-semibold rounded-xl border border-danger-200 transition-all hover:scale-105 flex items-center gap-2"
+                    data-order-id={order.id}
+                    data-order-number={order.order_number || order.id.slice(0, 8)}
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Cancelar Pedido
+                  </button>
+                )}
+                
+                {canRequestReturn && (
+                  <button 
+                    class="return-order-btn px-6 py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold rounded-xl border border-amber-200 transition-all hover:scale-105 flex items-center gap-2"
+                    data-order-id={order.id}
+                    data-order-number={order.order_number || order.id.slice(0, 8)}
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                    </svg>
+                    Solicitar Devolución
+                  </button>
+                )}
+
+                <a 
+                  href="/cuenta/pedidos" 
+                  class="px-6 py-3 bg-primary-100 hover:bg-primary-200 text-primary-700 font-semibold rounded-xl transition-all flex items-center gap-2"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+                  </svg>
+                  Volver a Mis Pedidos
+                </a>
+              </div>
+
+              {!canCancel && !canRequestReturn && (
+                <p class="text-primary-600 mt-4 text-sm">
+                  {order.status === 'cancelled' && 'Este pedido ha sido cancelado y no tiene acciones disponibles.'}
+                  {order.status === 'refunded' && 'El reembolso de este pedido ya ha sido procesado.'}
+                  {order.status === 'return_pending' && 'Tu solicitud de devolución está siendo procesada.'}
+                  {['processing', 'shipped'].includes(order.status) && 'No puedes cancelar ni devolver mientras el pedido está en tránsito.'}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <!-- Sidebar - Order Summary -->
+        <div class="lg:col-span-1">
+          <div class="bg-white rounded-2xl shadow-md border-2 border-primary-200/50 overflow-hidden sticky top-8 animate-slide-up" style="animation-delay: 150ms">
+            <div class="bg-gradient-to-r from-primary-100 to-primary-200/50 px-6 py-4 border-b border-primary-200/50">
+              <h2 class="font-bold text-primary-950 flex items-center gap-2">
+                <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                Resumen
+              </h2>
+            </div>
+            <div class="p-6">
+              <div class="space-y-3 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-primary-600">Subtotal</span>
+                  <span class="text-primary-900 font-medium">
+                    €{formatPrice(order.subtotal || (order.total * 0.79))}
+                  </span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-primary-600">Envío</span>
+                  <span class="text-primary-900 font-medium">
+                    {order.shipping === 0 ? 'Gratis' : `€${formatPrice(order.shipping || 0)}`}
+                  </span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-primary-600">IVA (21%)</span>
+                  <span class="text-primary-900 font-medium">
+                    €{formatPrice(order.tax || (order.total * 0.21))}
+                  </span>
+                </div>
+                <div class="border-t border-primary-200 pt-3 mt-3">
+                  <div class="flex justify-between items-baseline">
+                    <span class="font-bold text-primary-950">Total</span>
+                    <span class="text-2xl font-bold text-primary-950">
+                      €{formatPrice(order.total)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Timeline -->
+              <div class="mt-8 pt-6 border-t border-primary-200">
+                <h3 class="font-semibold text-primary-900 mb-4">Estado del pedido</h3>
+                <div class="space-y-4">
+                  <div class="flex items-center gap-3">
+                    <div class={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      ['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled', 'return_pending', 'refunded'].includes(order.status)
+                        ? 'bg-success-100 text-success-600'
+                        : 'bg-primary-100 text-primary-400'
+                    }`}>
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                    </div>
+                    <span class="text-sm text-primary-700">Pedido realizado</span>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <div class={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      ['paid', 'processing', 'shipped', 'delivered', 'return_pending', 'refunded'].includes(order.status)
+                        ? 'bg-success-100 text-success-600'
+                        : order.status === 'cancelled'
+                        ? 'bg-danger-100 text-danger-600'
+                        : 'bg-primary-100 text-primary-400'
+                    }`}>
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={order.status === 'cancelled' ? "M6 18L18 6M6 6l12 12" : "M5 13l4 4L19 7"} /></svg>
+                    </div>
+                    <span class="text-sm text-primary-700">Pago confirmado</span>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <div class={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      ['processing', 'shipped', 'delivered', 'return_pending', 'refunded'].includes(order.status)
+                        ? 'bg-success-100 text-success-600'
+                        : 'bg-primary-100 text-primary-400'
+                    }`}>
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                    </div>
+                    <span class="text-sm text-primary-700">En preparación</span>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <div class={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      ['shipped', 'delivered', 'return_pending', 'refunded'].includes(order.status)
+                        ? 'bg-success-100 text-success-600'
+                        : 'bg-primary-100 text-primary-400'
+                    }`}>
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                    </div>
+                    <span class="text-sm text-primary-700">Enviado</span>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <div class={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      ['delivered', 'return_pending', 'refunded'].includes(order.status)
+                        ? 'bg-success-100 text-success-600'
+                        : 'bg-primary-100 text-primary-400'
+                    }`}>
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                    </div>
+                    <span class="text-sm text-primary-700">Entregado</span>
+                  </div>
+                  {order.status === 'refunded' && (
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-full flex items-center justify-center bg-gray-100 text-gray-600">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      </div>
+                      <span class="text-sm text-primary-700">Reembolsado</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Help Section -->
+      <div class="mt-12 bg-gradient-to-r from-primary-100 to-primary-50 rounded-2xl p-8 border border-primary-200/50 animate-slide-up" style="animation-delay: 300ms">
+        <h3 class="font-bold text-primary-950 text-lg mb-4">¿Necesitas ayuda?</h3>
+        <p class="text-primary-700 mb-4">
+          Si tienes alguna pregunta sobre tu pedido, no dudes en contactarnos.
+        </p>
+        <div class="flex flex-wrap gap-4">
+          <a href="mailto:soporte@fashionstore.com" class="inline-flex items-center gap-2 text-primary-600 hover:text-primary-900 font-medium transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            soporte@fashionstore.com
+          </a>
+          <span class="text-primary-300">|</span>
+          <span class="inline-flex items-center gap-2 text-primary-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+            </svg>
+            +34 900 123 456
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cancel Order Modal -->
+  <div id="cancel-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="cancel-backdrop"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 animate-scale-in">
+        <div class="text-center mb-6">
+          <div class="w-16 h-16 rounded-full bg-danger-100 flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-danger-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h3 class="text-2xl font-serif font-bold text-primary-950 mb-2">¿Cancelar pedido?</h3>
+          <p class="text-primary-700">
+            ¿Estás seguro de que deseas cancelar el pedido #<span id="cancel-order-number"></span>?
+          </p>
+        </div>
+        
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+          <p class="text-sm text-amber-800">
+            <strong>⚠️ Importante:</strong> Esta acción es irreversible.
+          </p>
+        </div>
+        
+        <div class="flex gap-3">
+          <button id="cancel-modal-close" class="flex-1 px-5 py-3 bg-primary-100 hover:bg-primary-200 text-primary-700 font-semibold rounded-xl transition-all">
+            No, mantener
+          </button>
+          <button id="cancel-modal-confirm" class="flex-1 px-5 py-3 bg-danger-600 hover:bg-danger-700 text-white font-semibold rounded-xl transition-all">
+            Sí, cancelar
+          </button>
+        </div>
+        
+        <p id="cancel-modal-error" class="hidden mt-4 text-center text-danger-600 font-medium"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Return Request Modal -->
+  <div id="return-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="return-backdrop"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4 overflow-y-auto">
+      <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full my-8 animate-scale-in">
+        <div class="bg-gradient-to-r from-amber-500 to-orange-500 px-8 py-6 text-white rounded-t-2xl">
+          <h3 class="text-2xl font-serif font-bold mb-1">Solicitar Devolución</h3>
+          <p class="text-amber-100">Pedido #<span id="return-order-number"></span></p>
+        </div>
+        
+        <div class="p-8">
+          <div class="mb-6">
+            <label class="block text-sm font-semibold text-primary-900 mb-2">
+              Motivo de la devolución (opcional)
+            </label>
+            <textarea 
+              id="return-reason" 
+              class="w-full px-4 py-3 rounded-xl border-2 border-primary-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none transition-all resize-none"
+              rows="3"
+              placeholder="Cuéntanos por qué deseas devolver el producto..."
+            ></textarea>
+          </div>
+          
+          <div class="flex gap-3">
+            <button id="return-modal-close" class="flex-1 px-5 py-3 bg-primary-100 hover:bg-primary-200 text-primary-700 font-semibold rounded-xl transition-all">
+              Cancelar
+            </button>
+            <button id="return-modal-confirm" class="flex-1 px-5 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl transition-all">
+              Confirmar Solicitud
+            </button>
+          </div>
+          
+          <p id="return-modal-error" class="hidden mt-4 text-center text-danger-600 font-medium"></p>
+          <p id="return-modal-success" class="hidden mt-4 text-center text-success-600 font-medium"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</PublicLayout>
+
+<script>
+  // Cancel Order Modal Logic
+  const cancelModal = document.getElementById('cancel-modal');
+  const cancelBackdrop = document.getElementById('cancel-backdrop');
+  const cancelModalClose = document.getElementById('cancel-modal-close');
+  const cancelModalConfirm = document.getElementById('cancel-modal-confirm');
+  const cancelOrderNumber = document.getElementById('cancel-order-number');
+  const cancelModalError = document.getElementById('cancel-modal-error');
+  
+  let currentCancelOrderId: string | null = null;
+  
+  document.querySelectorAll('.cancel-order-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const target = e.currentTarget as HTMLElement;
+      currentCancelOrderId = target.dataset.orderId || null;
+      const orderNum = target.dataset.orderNumber || '';
+      
+      if (cancelOrderNumber) cancelOrderNumber.textContent = orderNum;
+      cancelModal?.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    });
+  });
+  
+  function closeCancelModal() {
+    cancelModal?.classList.add('hidden');
+    document.body.style.overflow = '';
+    currentCancelOrderId = null;
+    cancelModalError?.classList.add('hidden');
+  }
+  
+  cancelModalClose?.addEventListener('click', closeCancelModal);
+  cancelBackdrop?.addEventListener('click', closeCancelModal);
+  
+  cancelModalConfirm?.addEventListener('click', async () => {
+    if (!currentCancelOrderId) return;
+    
+    const btn = cancelModalConfirm as HTMLButtonElement;
+    btn.disabled = true;
+    btn.textContent = 'Cancelando...';
+    cancelModalError?.classList.add('hidden');
+    
+    try {
+      const response = await fetch('/api/orders/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: currentCancelOrderId })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        window.location.reload();
+      } else {
+        throw new Error(data.error || 'Error al cancelar');
+      }
+    } catch (error: any) {
+      cancelModalError!.textContent = error.message;
+      cancelModalError?.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Sí, cancelar';
+    }
+  });
+  
+  // Return Order Modal Logic
+  const returnModal = document.getElementById('return-modal');
+  const returnBackdrop = document.getElementById('return-backdrop');
+  const returnModalClose = document.getElementById('return-modal-close');
+  const returnModalConfirm = document.getElementById('return-modal-confirm');
+  const returnOrderNumber = document.getElementById('return-order-number');
+  const returnReason = document.getElementById('return-reason') as HTMLTextAreaElement;
+  const returnModalError = document.getElementById('return-modal-error');
+  const returnModalSuccess = document.getElementById('return-modal-success');
+  
+  let currentReturnOrderId: string | null = null;
+  
+  document.querySelectorAll('.return-order-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const target = e.currentTarget as HTMLElement;
+      currentReturnOrderId = target.dataset.orderId || null;
+      const orderNum = target.dataset.orderNumber || '';
+      
+      if (returnOrderNumber) returnOrderNumber.textContent = orderNum;
+      returnModal?.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    });
+  });
+  
+  function closeReturnModal() {
+    returnModal?.classList.add('hidden');
+    document.body.style.overflow = '';
+    currentReturnOrderId = null;
+    returnModalError?.classList.add('hidden');
+    returnModalSuccess?.classList.add('hidden');
+    if (returnReason) returnReason.value = '';
+  }
+  
+  returnModalClose?.addEventListener('click', closeReturnModal);
+  returnBackdrop?.addEventListener('click', closeReturnModal);
+  
+  returnModalConfirm?.addEventListener('click', async () => {
+    if (!currentReturnOrderId) return;
+    
+    const btn = returnModalConfirm as HTMLButtonElement;
+    btn.disabled = true;
+    btn.textContent = 'Procesando...';
+    returnModalError?.classList.add('hidden');
+    
+    try {
+      const response = await fetch('/api/orders/return-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          orderId: currentReturnOrderId,
+          reason: returnReason?.value || ''
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        const ticketInfo = data.ticketNumber ? `\n🎫 Ticket: ${data.ticketNumber}` : '';
+        returnModalSuccess!.innerHTML = `✅ Solicitud registrada${ticketInfo}<br><small>Email enviado con instrucciones</small>`;
+        returnModalSuccess?.classList.remove('hidden');
+        btn.textContent = 'Solicitud enviada';
+        
+        setTimeout(() => {
+          window.location.reload();
+        }, 3000);
+      } else {
+        throw new Error(data.error || 'Error al procesar');
+      }
+    } catch (error: any) {
+      returnModalError!.textContent = error.message;
+      returnModalError?.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Confirmar Solicitud';
+    }
+  });
+  
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (!cancelModal?.classList.contains('hidden')) closeCancelModal();
+      if (!returnModal?.classList.contains('hidden')) closeReturnModal();
+    }
+  });
+</script>

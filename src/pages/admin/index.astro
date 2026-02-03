@@ -45,7 +45,7 @@ const totalRevenue = orders?.reduce((sum, order) => sum + (order.total || 0), 0)
   <div class="welcome-banner relative overflow-hidden rounded-2xl p-8 mb-8">
     <div class="relative z-10">
       <h2 class="text-2xl lg:text-3xl font-bold text-white mb-2">
-        ¡Bienvenido de nuevo! 👋
+        ¡Bienvenido de nuevo!
       </h2>
       <p class="text-white/80 text-lg">
         Aquí tienes el resumen de tu tienda hoy
@@ -144,7 +144,7 @@ const totalRevenue = orders?.reduce((sum, order) => sum + (order.total || 0), 0)
         <div>
           <p class="text-gray-500 text-sm font-medium">Ofertas Flash</p>
           <p class="text-2xl font-bold text-gray-900 mt-2">
-            {showFlashOffers ? '✨ Activas' : 'Inactivas'}
+            {showFlashOffers ? 'Activas' : 'Inactivas'}
           </p>
         </div>
         <div class={`stat-icon ${showFlashOffers ? 'bg-gradient-to-br from-amber-400 to-yellow-500' : 'bg-gray-300'}`}>

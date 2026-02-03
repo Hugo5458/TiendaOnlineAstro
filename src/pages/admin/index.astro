@@ -35,91 +35,137 @@ const stats = {
 };
 
 const showFlashOffers = settings?.find(s => s.key === 'show_flash_offers')?.value === true;
+
+// Calculate total revenue
+const totalRevenue = orders?.reduce((sum, order) => sum + (order.total || 0), 0) || 0;
 ---
 
 <AdminLayout title="Dashboard">
+  <!-- Welcome Banner -->
+  <div class="welcome-banner relative overflow-hidden rounded-2xl p-8 mb-8">
+    <div class="relative z-10">
+      <h2 class="text-2xl lg:text-3xl font-bold text-white mb-2">
+        ¡Bienvenido de nuevo! 👋
+      </h2>
+      <p class="text-white/80 text-lg">
+        Aquí tienes el resumen de tu tienda hoy
+      </p>
+    </div>
+    <div class="absolute right-0 top-0 w-64 h-64 opacity-20">
+      <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <path fill="currentColor" class="text-white" d="M47.5,-57.5C59.9,-46.1,67.3,-29.6,70.1,-12.4C72.9,4.8,71.1,22.7,62.8,37.1C54.5,51.5,39.7,62.4,22.9,68.5C6.1,74.6,-12.7,75.9,-29.9,70.5C-47.1,65.1,-62.7,53,-71.3,37.1C-79.9,21.2,-81.5,1.5,-76.5,-15.9C-71.5,-33.3,-59.9,-48.4,-45.5,-59.4C-31.1,-70.4,-13.9,-77.3,2.4,-80.2C18.7,-83.1,35.1,-68.9,47.5,-57.5Z" transform="translate(100 100)" />
+      </svg>
+    </div>
+  </div>
+
   <!-- Stats Grid -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
     <!-- Total Products -->
-    <div class="bg-white rounded-xl p-6 shadow-sm border border-charcoal-100">
-      <div class="flex items-center justify-between">
+    <div class="stat-card group">
+      <div class="flex items-start justify-between">
         <div>
-          <p class="text-charcoal-500 text-sm">Productos totales</p>
-          <p class="text-3xl font-bold text-navy-900 mt-1">{stats.totalProducts}</p>
+          <p class="text-gray-500 text-sm font-medium">Productos totales</p>
+          <p class="text-4xl font-bold text-gray-900 mt-2 stat-number">{stats.totalProducts}</p>
+          <div class="flex items-center mt-3 text-sm">
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 font-medium">
+              <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              {stats.activeProducts} activos
+            </span>
+          </div>
         </div>
-        <div class="w-12 h-12 bg-navy-100 rounded-lg flex items-center justify-center">
-          <svg class="w-6 h-6 text-navy-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="stat-icon bg-gradient-to-br from-indigo-500 to-purple-600">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
           </svg>
         </div>
       </div>
-      <div class="flex items-center mt-4 text-sm">
-        <span class="text-green-600">{stats.activeProducts} activos</span>
+      <div class="stat-progress mt-4">
+        <div class="stat-progress-bar bg-indigo-500" style={`width: ${(stats.activeProducts / stats.totalProducts) * 100}%`}></div>
       </div>
     </div>
     
     <!-- Low Stock Alert -->
-    <div class="bg-white rounded-xl p-6 shadow-sm border border-charcoal-100">
-      <div class="flex items-center justify-between">
+    <div class="stat-card group">
+      <div class="flex items-start justify-between">
         <div>
-          <p class="text-charcoal-500 text-sm">Stock bajo</p>
-          <p class="text-3xl font-bold text-amber-600 mt-1">{stats.lowStock}</p>
+          <p class="text-gray-500 text-sm font-medium">Stock bajo</p>
+          <p class="text-4xl font-bold text-gray-900 mt-2 stat-number">{stats.lowStock}</p>
+          <div class="flex items-center mt-3 text-sm">
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-red-100 text-red-700 font-medium">
+              <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              {stats.outOfStock} agotados
+            </span>
+          </div>
         </div>
-        <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
-          <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="stat-icon bg-gradient-to-br from-amber-500 to-orange-600">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
         </div>
       </div>
-      <div class="flex items-center mt-4 text-sm">
-        <span class="text-red-600">{stats.outOfStock} agotados</span>
+      <div class="stat-progress mt-4">
+        <div class="stat-progress-bar bg-amber-500" style={`width: ${Math.min((stats.lowStock / 10) * 100, 100)}%`}></div>
       </div>
     </div>
     
     <!-- Orders -->
-    <div class="bg-white rounded-xl p-6 shadow-sm border border-charcoal-100">
-      <div class="flex items-center justify-between">
+    <div class="stat-card group">
+      <div class="flex items-start justify-between">
         <div>
-          <p class="text-charcoal-500 text-sm">Pedidos totales</p>
-          <p class="text-3xl font-bold text-navy-900 mt-1">{stats.totalOrders}</p>
+          <p class="text-gray-500 text-sm font-medium">Pedidos totales</p>
+          <p class="text-4xl font-bold text-gray-900 mt-2 stat-number">{stats.totalOrders}</p>
+          <div class="flex items-center mt-3 text-sm">
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 font-medium">
+              <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {stats.pendingOrders} pendientes
+            </span>
+          </div>
         </div>
-        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-          <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="stat-icon bg-gradient-to-br from-emerald-500 to-teal-600">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
           </svg>
         </div>
       </div>
-      <div class="flex items-center mt-4 text-sm">
-        <span class="text-amber-600">{stats.pendingOrders} pendientes</span>
+      <div class="stat-progress mt-4">
+        <div class="stat-progress-bar bg-emerald-500" style={`width: ${Math.min((stats.totalOrders / 50) * 100, 100)}%`}></div>
       </div>
     </div>
     
     <!-- Flash Offers Toggle -->
-    <div class="bg-white rounded-xl p-6 shadow-sm border border-charcoal-100">
-      <div class="flex items-center justify-between mb-4">
+    <div class="stat-card group">
+      <div class="flex items-start justify-between mb-4">
         <div>
-          <p class="text-charcoal-500 text-sm">Ofertas Flash</p>
-          <p class="text-lg font-semibold text-navy-900 mt-1">
-            {showFlashOffers ? 'Activas' : 'Inactivas'}
+          <p class="text-gray-500 text-sm font-medium">Ofertas Flash</p>
+          <p class="text-2xl font-bold text-gray-900 mt-2">
+            {showFlashOffers ? '✨ Activas' : 'Inactivas'}
           </p>
         </div>
-        <div class={`w-12 h-12 rounded-lg flex items-center justify-center ${showFlashOffers ? 'bg-gold-100' : 'bg-charcoal-100'}`}>
-          <svg class={`w-6 h-6 ${showFlashOffers ? 'text-gold-600' : 'text-charcoal-400'}`} fill="currentColor" viewBox="0 0 20 20">
+        <div class={`stat-icon ${showFlashOffers ? 'bg-gradient-to-br from-amber-400 to-yellow-500' : 'bg-gray-300'}`}>
+          <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" />
           </svg>
         </div>
       </div>
       <!-- Toggle Switch -->
       <form id="flash-offers-form" class="flex items-center">
-        <label class="relative inline-flex items-center cursor-pointer">
+        <label class="toggle-switch">
           <input 
             type="checkbox" 
             id="flash-offers-toggle"
             class="sr-only peer" 
             checked={showFlashOffers}
           />
-          <div class="w-11 h-6 bg-charcoal-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-navy-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-charcoal-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gold-600"></div>
-          <span class="ms-3 text-sm font-medium text-charcoal-700">
+          <div class="toggle-track peer-checked:bg-gradient-to-r peer-checked:from-amber-400 peer-checked:to-yellow-500">
+            <div class="toggle-thumb peer-checked:translate-x-6"></div>
+          </div>
+          <span class="ml-3 text-sm font-medium text-gray-700">
             Mostrar en tienda
           </span>
         </label>
@@ -130,23 +176,33 @@ const showFlashOffers = settings?.find(s => s.key === 'show_flash_offers')?.valu
   <!-- Recent Activity -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <!-- Low Stock Products -->
-    <div class="bg-white rounded-xl shadow-sm border border-charcoal-100">
-      <div class="px-6 py-4 border-b border-charcoal-100 flex items-center justify-between">
-        <h2 class="font-semibold text-navy-900">Productos con stock bajo</h2>
-        <a href="/admin/productos" class="text-sm text-navy-600 hover:text-navy-800">
-          Ver todos →
+    <div class="content-card">
+      <div class="card-header">
+        <div class="flex items-center gap-3">
+          <div class="p-2 rounded-xl bg-amber-100">
+            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 class="font-bold text-gray-900 text-lg">Productos con stock bajo</h2>
+        </div>
+        <a href="/admin/productos" class="text-sm font-medium text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition-colors">
+          Ver todos
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
         </a>
       </div>
       <div class="p-6">
         {products.filter(p => p.stock <= 5 && p.stock > 0).length > 0 ? (
           <ul class="space-y-4">
-            {products.filter(p => p.stock <= 5 && p.stock > 0).slice(0, 5).map(product => (
-              <li class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-cream-100 rounded-lg overflow-hidden flex-shrink-0">
+            {products.filter(p => p.stock <= 5 && p.stock > 0).slice(0, 5).map((product, index) => (
+              <li class="product-item flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-all duration-200" style={`animation-delay: ${index * 100}ms`}>
+                <div class="w-14 h-14 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl overflow-hidden flex-shrink-0 shadow-sm">
                   {product.images[0] ? (
                     <img src={product.images[0]} alt={product.name} class="w-full h-full object-cover" />
                   ) : (
-                    <div class="w-full h-full flex items-center justify-center text-charcoal-300">
+                    <div class="w-full h-full flex items-center justify-center text-gray-400">
                       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
@@ -154,71 +210,296 @@ const showFlashOffers = settings?.find(s => s.key === 'show_flash_offers')?.valu
                   )}
                 </div>
                 <div class="flex-1 min-w-0">
-                  <p class="font-medium text-navy-900 truncate">{product.name}</p>
-                  <p class="text-sm text-charcoal-500">{formatPrice(product.price)}</p>
+                  <p class="font-semibold text-gray-900 truncate">{product.name}</p>
+                  <p class="text-sm text-gray-500">{formatPrice(product.price)}</p>
                 </div>
-                <span class="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded">
+                <span class={`stock-badge ${product.stock <= 2 ? 'stock-critical' : 'stock-warning'}`}>
                   {product.stock} uds
                 </span>
               </li>
             ))}
           </ul>
         ) : (
-          <p class="text-charcoal-500 text-center py-4">No hay productos con stock bajo</p>
+          <div class="text-center py-8">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
+              <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p class="text-gray-500 font-medium">¡Excelente! No hay productos con stock bajo</p>
+          </div>
         )}
       </div>
     </div>
     
     <!-- Quick Actions -->
-    <div class="bg-white rounded-xl shadow-sm border border-charcoal-100">
-      <div class="px-6 py-4 border-b border-charcoal-100">
-        <h2 class="font-semibold text-navy-900">Acciones rápidas</h2>
+    <div class="content-card">
+      <div class="card-header">
+        <div class="flex items-center gap-3">
+          <div class="p-2 rounded-xl bg-indigo-100">
+            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <h2 class="font-bold text-gray-900 text-lg">Acciones rápidas</h2>
+        </div>
       </div>
       <div class="p-6 grid grid-cols-2 gap-4">
         <a 
           href="/admin/productos/nuevo"
-          class="flex flex-col items-center justify-center p-6 bg-navy-50 rounded-xl hover:bg-navy-100 transition-colors"
+          class="action-card group"
         >
-          <svg class="w-8 h-8 text-navy-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          <span class="text-sm font-medium text-navy-900">Nuevo producto</span>
+          <div class="action-icon bg-gradient-to-br from-indigo-500 to-purple-600 group-hover:scale-110">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+          </div>
+          <span class="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">Nuevo producto</span>
+          <span class="text-xs text-gray-500">Añadir al catálogo</span>
         </a>
         
         <a 
           href="/admin/productos"
-          class="flex flex-col items-center justify-center p-6 bg-cream-50 rounded-xl hover:bg-cream-100 transition-colors"
+          class="action-card group"
         >
-          <svg class="w-8 h-8 text-charcoal-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-          </svg>
-          <span class="text-sm font-medium text-navy-900">Ver productos</span>
+          <div class="action-icon bg-gradient-to-br from-slate-600 to-slate-800 group-hover:scale-110">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+            </svg>
+          </div>
+          <span class="text-sm font-semibold text-gray-900 group-hover:text-slate-600 transition-colors">Ver productos</span>
+          <span class="text-xs text-gray-500">Gestionar catálogo</span>
         </a>
         
         <a 
           href="/admin/pedidos"
-          class="flex flex-col items-center justify-center p-6 bg-green-50 rounded-xl hover:bg-green-100 transition-colors"
+          class="action-card group"
         >
-          <svg class="w-8 h-8 text-green-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
-          <span class="text-sm font-medium text-navy-900">Ver pedidos</span>
+          <div class="action-icon bg-gradient-to-br from-emerald-500 to-teal-600 group-hover:scale-110">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </div>
+          <span class="text-sm font-semibold text-gray-900 group-hover:text-emerald-600 transition-colors">Ver pedidos</span>
+          <span class="text-xs text-gray-500">Gestionar ventas</span>
         </a>
         
         <a 
           href="/"
           target="_blank"
-          class="flex flex-col items-center justify-center p-6 bg-gold-50 rounded-xl hover:bg-gold-100 transition-colors"
+          class="action-card group"
         >
-          <svg class="w-8 h-8 text-gold-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          </svg>
-          <span class="text-sm font-medium text-navy-900">Ver tienda</span>
+          <div class="action-icon bg-gradient-to-br from-amber-400 to-orange-500 group-hover:scale-110">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </div>
+          <span class="text-sm font-semibold text-gray-900 group-hover:text-amber-600 transition-colors">Ver tienda</span>
+          <span class="text-xs text-gray-500">Abrir en nueva pestaña</span>
         </a>
       </div>
     </div>
   </div>
 </AdminLayout>
+
+<style>
+  .welcome-banner {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    animation: gradientShift 15s ease infinite;
+    background-size: 200% 200%;
+  }
+
+  @keyframes gradientShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  .stat-card {
+    background: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.15);
+  }
+
+  .stat-card:hover::before {
+    opacity: 1;
+  }
+
+  .stat-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+  }
+
+  .stat-card:hover .stat-icon {
+    transform: scale(1.1) rotate(-5deg);
+  }
+
+  .stat-number {
+    background: linear-gradient(135deg, #1f2937, #374151);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .stat-progress {
+    height: 4px;
+    background: #f3f4f6;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .stat-progress-bar {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1s ease-out;
+  }
+
+  .content-card {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #f3f4f6;
+    background: linear-gradient(180deg, #fafafa, #ffffff);
+  }
+
+  .product-item {
+    animation: fadeInUp 0.4s ease-out backwards;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .stock-badge {
+    padding: 0.375rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .stock-warning {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    color: #92400e;
+  }
+
+  .stock-critical {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    color: #991b1b;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  .action-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: linear-gradient(145deg, #f9fafb, #f3f4f6);
+    border-radius: 1rem;
+    border: 1px solid #e5e7eb;
+    transition: all 0.3s ease;
+    text-align: center;
+    gap: 0.5rem;
+  }
+
+  .action-card:hover {
+    background: linear-gradient(145deg, #ffffff, #f9fafb);
+    border-color: #d1d5db;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.1);
+  }
+
+  .action-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+    box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+  }
+
+  .toggle-switch {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+  }
+
+  .toggle-track {
+    position: relative;
+    width: 3.5rem;
+    height: 2rem;
+    background: #e5e7eb;
+    border-radius: 9999px;
+    transition: all 0.3s ease;
+  }
+
+  .toggle-thumb {
+    position: absolute;
+    top: 0.25rem;
+    left: 0.25rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    background: white;
+    border-radius: 9999px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+  }
+
+  .toggle-switch input:checked + .toggle-track .toggle-thumb {
+    transform: translateX(1.5rem);
+  }
+</style>
 
 <script>
   const toggle = document.getElementById('flash-offers-toggle') as HTMLInputElement;

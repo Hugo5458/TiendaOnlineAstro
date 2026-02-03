@@ -30,13 +30,42 @@ try {
     // 1. Check if order already exists
     const { data: existingOrder } = await supabaseAdmin
       .from('orders')
-      .select('id, order_number')
+      .select('*, order_items(*)')
       .eq('payment_intent_id', session.payment_intent)
       .single();
 
     if (existingOrder) {
       orderCreated = true;
       orderDetails = existingOrder;
+      
+      // Send email if order exists but items are present (ensure customer gets confirmation)
+      try {
+        const { sendOrderConfirmationEmail } = await import('../../lib/email');
+        const orderItems = existingOrder.order_items || [];
+        
+        if (orderItems.length > 0) {
+          await sendOrderConfirmationEmail({
+            orderNumber: existingOrder.order_number,
+            customerName: existingOrder.customer_name || 'Cliente',
+            customerEmail: existingOrder.customer_email,
+            items: orderItems.map((item: any) => ({
+              name: item.product_name || 'Producto',
+              quantity: item.quantity,
+              price: item.unit_price,
+              total: item.total_price,
+              image: item.product_image
+            })),
+            subtotal: existingOrder.subtotal || 0,
+            shipping: existingOrder.shipping_cost || 0,
+            tax: existingOrder.tax || 0,
+            total: existingOrder.total,
+            shippingAddress: existingOrder.shipping_address || {},
+            date: existingOrder.created_at
+          });
+        }
+      } catch (emailErr) {
+        console.error('Error sending email for existing order:', emailErr);
+      }
     } else {
       // 2. Create order if it doesn't exist (Fallback for Webhook)
       const metadata = session.metadata;
@@ -269,7 +298,7 @@ try {
                         customerName: finalOrder.customer_name,
                         customerEmail: finalOrder.customer_email,
                         items: finalItems.map((item: any) => ({
-                            name: finalOrder.product_name || item.product_name || 'Producto',
+                            name: item.product_name || 'Producto',
                             quantity: item.quantity,
                             price: item.unit_price,
                             total: item.total_price,

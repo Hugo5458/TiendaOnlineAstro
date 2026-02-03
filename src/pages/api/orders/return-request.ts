@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { supabase, isSupabaseConfigured, createServerClient } from '../../../lib/supabase';
+import { sendRefundTicketEmail } from '../../../lib/email';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
     const accessToken = cookies.get('sb-access-token')?.value;
@@ -24,10 +25,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         if (!isSupabaseConfigured()) {
             // Demo mode
+            const demoTicketNumber = 'TKT-' + Date.now().toString().slice(-8);
             return new Response(JSON.stringify({
                 success: true,
                 message: 'Solicitud de devolución registrada (Modo Demo)',
-                returnId: 'demo-return-' + Date.now()
+                returnId: 'demo-return-' + Date.now(),
+                ticketNumber: demoTicketNumber
             }), { status: 200 });
         }
 
@@ -37,10 +40,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         const serverClient = createServerClient();
 
-        // Verify order exists and belongs to user
+        // Verify order exists and belongs to user - Include order items for the email
         const { data: order, error: orderError } = await serverClient
             .from('orders')
-            .select('id, status, customer_email')
+            .select('id, status, customer_email, customer_name, order_number, total, order_items(*)')
             .eq('id', orderId)
             .single();
 
@@ -81,23 +84,51 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             }), { status: 400 });
         }
 
+        // Generate unique ticket number
+        const ticketNumber = 'TKT-' + new Date().toISOString().slice(2, 10).replace(/-/g, '') + '-' +
+            Math.random().toString(36).substring(2, 6).toUpperCase();
+
         // Create return request
         const { data: returnRequest, error: insertError } = await serverClient
             .from('return_requests')
             .insert({
                 order_id: orderId,
                 reason: reason || 'No especificado',
-                status: 'pending'
+                status: 'pending',
+                tracking_number: ticketNumber, // Use tracking_number field to store ticket number
+                refund_amount: order.total
             })
             .select()
             .single();
 
         if (insertError) throw insertError;
 
+        // Send refund ticket email to customer
+        try {
+            await sendRefundTicketEmail({
+                ticketNumber: ticketNumber,
+                orderNumber: order.order_number || orderId.slice(0, 8).toUpperCase(),
+                customerName: order.customer_name || 'Cliente',
+                customerEmail: order.customer_email,
+                items: (order.order_items || []).map((item: any) => ({
+                    name: item.product_name,
+                    quantity: item.quantity,
+                    price: item.unit_price
+                })),
+                refundAmount: order.total,
+                reason: reason || undefined,
+                requestDate: new Date().toISOString()
+            });
+        } catch (emailError) {
+            console.error('Error enviando email de ticket:', emailError);
+            // Don't fail the request if email fails
+        }
+
         return new Response(JSON.stringify({
             success: true,
-            message: 'Solicitud de devolución registrada correctamente',
-            returnId: returnRequest.id
+            message: 'Solicitud de devolución registrada correctamente. Te hemos enviado un ticket por email.',
+            returnId: returnRequest.id,
+            ticketNumber: ticketNumber
         }), { status: 200 });
 
     } catch (error: any) {

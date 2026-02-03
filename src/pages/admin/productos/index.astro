@@ -1,6 +1,5 @@
 ---
 import AdminLayout from '../../../layouts/AdminLayout.astro';
-import Button from '../../../components/ui/Button.astro';
 import { getProducts, getCategories } from '../../../lib/supabase';
 import { formatPrice, getStockStatus } from '../../../lib/utils';
 
@@ -37,90 +36,115 @@ if (searchQuery) {
 
 <AdminLayout title="Gestión de Productos">
   <!-- Header -->
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
     <div>
-      <h2 class="text-lg text-charcoal-600">
-        {filteredProducts.length} productos encontrados
-      </h2>
+      <p class="text-gray-500 text-sm">
+        Mostrando <span class="font-semibold text-gray-900">{filteredProducts.length}</span> de {products.length} productos
+      </p>
     </div>
-    <Button href="/admin/productos/nuevo" variant="primary">
-      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <a 
+      href="/admin/productos/nuevo" 
+      class="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium rounded-xl shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 transition-all duration-300 hover:-translate-y-0.5"
+    >
+      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
       </svg>
       Nuevo Producto
-    </Button>
+    </a>
   </div>
   
   <!-- Filters -->
-  <div class="bg-white rounded-xl shadow-sm border border-charcoal-100 p-4 mb-6">
+  <div class="filter-card mb-6">
     <form class="flex flex-col md:flex-row gap-4">
       <!-- Search -->
-      <div class="flex-1">
+      <div class="flex-1 relative">
+        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+          <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
         <input 
           type="text" 
           name="buscar"
           value={searchQuery || ''}
           placeholder="Buscar productos..."
-          class="w-full px-4 py-2 rounded-lg border border-charcoal-200 focus:border-navy-500 focus:ring-2 focus:ring-navy-500/20 outline-none"
+          class="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all duration-200"
         />
       </div>
       
       <!-- Category Filter -->
-      <select 
-        name="categoria"
-        class="px-4 py-2 rounded-lg border border-charcoal-200 bg-white focus:border-navy-500 focus:ring-2 focus:ring-navy-500/20 outline-none"
-      >
-        <option value="">Todas las categorías</option>
-        {categories.map(cat => (
-          <option value={cat.slug} selected={categoryFilter === cat.slug}>
-            {cat.name}
-          </option>
-        ))}
-      </select>
+      <div class="relative">
+        <select 
+          name="categoria"
+          class="appearance-none px-4 py-3 pr-10 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all duration-200 cursor-pointer min-w-[180px]"
+        >
+          <option value="">Todas las categorías</option>
+          {categories.map(cat => (
+            <option value={cat.slug} selected={categoryFilter === cat.slug}>
+              {cat.name}
+            </option>
+          ))}
+        </select>
+        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+          <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </div>
       
       <!-- Stock Filter -->
-      <select 
-        name="stock"
-        class="px-4 py-2 rounded-lg border border-charcoal-200 bg-white focus:border-navy-500 focus:ring-2 focus:ring-navy-500/20 outline-none"
-      >
-        <option value="">Todo el stock</option>
-        <option value="low" selected={stockFilter === 'low'}>Stock bajo</option>
-        <option value="out" selected={stockFilter === 'out'}>Agotados</option>
-      </select>
+      <div class="relative">
+        <select 
+          name="stock"
+          class="appearance-none px-4 py-3 pr-10 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all duration-200 cursor-pointer min-w-[160px]"
+        >
+          <option value="">Todo el stock</option>
+          <option value="low" selected={stockFilter === 'low'}>Stock bajo</option>
+          <option value="out" selected={stockFilter === 'out'}>Agotados</option>
+        </select>
+        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+          <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </div>
       
-      <Button type="submit" variant="outline">
+      <button 
+        type="submit" 
+        class="px-6 py-3 rounded-xl border-2 border-gray-200 text-gray-700 font-medium hover:border-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all duration-200"
+      >
         Filtrar
-      </Button>
+      </button>
     </form>
   </div>
   
   <!-- Products Table -->
-  <div class="bg-white rounded-xl shadow-sm border border-charcoal-100 overflow-hidden">
+  <div class="table-card">
     <div class="overflow-x-auto">
       <table class="w-full">
-        <thead class="bg-charcoal-50 border-b border-charcoal-100">
-          <tr>
-            <th class="text-left px-6 py-4 text-sm font-semibold text-charcoal-700">Producto</th>
-            <th class="text-left px-6 py-4 text-sm font-semibold text-charcoal-700">Categoría</th>
-            <th class="text-left px-6 py-4 text-sm font-semibold text-charcoal-700">Precio</th>
-            <th class="text-left px-6 py-4 text-sm font-semibold text-charcoal-700">Stock</th>
-            <th class="text-left px-6 py-4 text-sm font-semibold text-charcoal-700">Estado</th>
-            <th class="text-right px-6 py-4 text-sm font-semibold text-charcoal-700">Acciones</th>
+        <thead>
+          <tr class="border-b border-gray-100">
+            <th class="text-left px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Producto</th>
+            <th class="text-left px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Categoría</th>
+            <th class="text-left px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Precio</th>
+            <th class="text-left px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Stock</th>
+            <th class="text-left px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
+            <th class="text-right px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-charcoal-100">
+        <tbody class="divide-y divide-gray-50">
           {filteredProducts.length > 0 ? (
-            filteredProducts.map((product) => {
+            filteredProducts.map((product, index) => {
               const stockStatus = getStockStatus(product.stock);
               return (
-                <tr class="hover:bg-charcoal-50 transition-colors">
+                <tr class="table-row group" style={`animation-delay: ${index * 30}ms`}>
                   <td class="px-6 py-4">
                     <div class="flex items-center gap-4">
-                      <div class="w-12 h-12 bg-cream-100 rounded-lg overflow-hidden flex-shrink-0">
+                      <div class="w-14 h-14 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl overflow-hidden flex-shrink-0 shadow-sm group-hover:shadow-md transition-shadow">
                         {product.images[0] ? (
                           <img src={product.images[0]} alt={product.name} class="w-full h-full object-cover" />
                         ) : (
-                          <div class="w-full h-full flex items-center justify-center text-charcoal-300">
+                          <div class="w-full h-full flex items-center justify-center text-gray-400">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
@@ -128,52 +152,65 @@ if (searchQuery) {
                         )}
                       </div>
                       <div>
-                        <p class="font-medium text-navy-900">{product.name}</p>
-                        <p class="text-sm text-charcoal-500">{product.slug}</p>
+                        <p class="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">{product.name}</p>
+                        <p class="text-sm text-gray-400">{product.slug}</p>
                       </div>
                     </div>
                   </td>
                   <td class="px-6 py-4">
-                    <span class="text-charcoal-600">
+                    <span class="inline-flex items-center px-3 py-1 rounded-lg bg-gray-100 text-gray-600 text-sm font-medium">
                       {product.category?.name || '-'}
                     </span>
                   </td>
                   <td class="px-6 py-4">
-                    <span class="font-medium text-navy-900">{formatPrice(product.price)}</span>
+                    <span class="font-bold text-gray-900">{formatPrice(product.price)}</span>
                     {product.compare_at_price && (
-                      <span class="block text-sm text-charcoal-400 line-through">
+                      <span class="block text-sm text-gray-400 line-through">
                         {formatPrice(product.compare_at_price)}
                       </span>
                     )}
                   </td>
                   <td class="px-6 py-4">
-                    <span class={`font-medium ${stockStatus.color}`}>
+                    <span class={`inline-flex items-center px-3 py-1.5 rounded-lg font-bold text-sm ${
+                      product.stock === 0 
+                        ? 'bg-red-100 text-red-700' 
+                        : product.stock <= 5 
+                          ? 'bg-amber-100 text-amber-700' 
+                          : 'bg-emerald-100 text-emerald-700'
+                    }`}>
+                      {product.stock === 0 && (
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                      )}
                       {product.stock}
                     </span>
                   </td>
                   <td class="px-6 py-4">
                     <div class="flex items-center gap-2">
                       {product.is_active ? (
-                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">
+                          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
                           Activo
                         </span>
                       ) : (
-                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-charcoal-100 text-charcoal-700">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-500">
+                          <span class="w-1.5 h-1.5 rounded-full bg-gray-400 mr-1.5"></span>
                           Inactivo
                         </span>
                       )}
                       {product.is_flash_offer && (
-                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gold-100 text-gold-700">
-                          Flash
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-700">
+                          ⚡ Flash
                         </span>
                       )}
                     </div>
                   </td>
                   <td class="px-6 py-4 text-right">
-                    <div class="flex items-center justify-end gap-2">
+                    <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <a 
                         href={`/admin/productos/${product.id}`}
-                        class="p-2 text-charcoal-500 hover:text-navy-600 transition-colors"
+                        class="action-btn text-gray-500 hover:text-indigo-600 hover:bg-indigo-50"
                         title="Editar"
                       >
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -183,7 +220,7 @@ if (searchQuery) {
                       <a 
                         href={`/productos/${product.slug}`}
                         target="_blank"
-                        class="p-2 text-charcoal-500 hover:text-green-600 transition-colors"
+                        class="action-btn text-gray-500 hover:text-emerald-600 hover:bg-emerald-50"
                         title="Ver en tienda"
                       >
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -191,7 +228,7 @@ if (searchQuery) {
                         </svg>
                       </a>
                       <button 
-                        class="delete-product-btn p-2 text-charcoal-500 hover:text-red-600 transition-colors"
+                        class="delete-product-btn action-btn text-gray-500 hover:text-red-600 hover:bg-red-50"
                         data-product-id={product.id}
                         data-product-name={product.name}
                         title="Eliminar"
@@ -207,8 +244,14 @@ if (searchQuery) {
             })
           ) : (
             <tr>
-              <td colspan="6" class="px-6 py-12 text-center text-charcoal-500">
-                No se encontraron productos
+              <td colspan="6" class="px-6 py-16 text-center">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                  <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                  </svg>
+                </div>
+                <p class="text-gray-500 font-medium">No se encontraron productos</p>
+                <p class="text-gray-400 text-sm mt-1">Prueba a cambiar los filtros de búsqueda</p>
               </td>
             </tr>
           )}
@@ -218,12 +261,75 @@ if (searchQuery) {
   </div>
 </AdminLayout>
 
+<style>
+  .filter-card {
+    background: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  .table-card {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+  }
+
+  .table-row {
+    animation: fadeInUp 0.4s ease-out backwards;
+    transition: background-color 0.2s ease;
+  }
+
+  .table-row:hover {
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.02), transparent);
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .action-btn {
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+  }
+
+  /* Custom scrollbar */
+  .overflow-x-auto::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+</style>
+
 <script>
   // Delete product confirmation
   document.querySelectorAll('.delete-product-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
-      const productId = e.currentTarget.dataset.productId;
-      const productName = e.currentTarget.dataset.productName;
+      const target = e.currentTarget as HTMLButtonElement;
+      const productId = target.dataset.productId;
+      const productName = target.dataset.productName;
       
       if (confirm(`¿Estás seguro de que quieres eliminar "${productName}"?`)) {
         try {

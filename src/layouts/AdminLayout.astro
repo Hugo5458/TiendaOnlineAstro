@@ -39,11 +39,11 @@ if (!ADMIN_EMAILS.includes(userEmail)) {
 const currentPath = Astro.url.pathname;
 
 const navItems = [
-  { href: '/admin', label: 'Dashboard', icon: 'home' },
-  { href: '/admin/productos', label: 'Productos', icon: 'box' },
-  { href: '/admin/categorias', label: 'Categorías', icon: 'folder' },
-  { href: '/admin/pedidos', label: 'Pedidos', icon: 'shopping-bag' },
-  { href: '/admin/configuracion', label: 'Configuración', icon: 'settings' },
+  { href: '/admin', label: 'Dashboard', icon: 'home', description: 'Vista general' },
+  { href: '/admin/productos', label: 'Productos', icon: 'box', description: 'Gestionar catálogo' },
+  { href: '/admin/categorias', label: 'Categorías', icon: 'folder', description: 'Organizar productos' },
+  { href: '/admin/pedidos', label: 'Pedidos', icon: 'shopping-bag', description: 'Ver ventas' },
+  { href: '/admin/configuracion', label: 'Configuración', icon: 'settings', description: 'Ajustes' },
 ];
 
 const isActive = (href: string) => {
@@ -55,36 +55,48 @@ const isActive = (href: string) => {
 ---
 
 <BaseLayout title={`${title} | Admin - FashionStore`}>
-  <div class="min-h-screen flex bg-charcoal-50">
+  <div class="admin-wrapper min-h-screen flex">
     <!-- Mobile Sidebar Overlay -->
-    <div id="admin-mobile-overlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden glass-effect"></div>
+    <div id="admin-mobile-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden lg:hidden transition-all duration-300"></div>
 
     <!-- Mobile Sidebar -->
-    <aside id="admin-mobile-sidebar" class="fixed inset-y-0 left-0 w-64 bg-charcoal-900 text-white z-50 transform -translate-x-full transition-transform duration-300 lg:hidden flex flex-col shadow-2xl">
+    <aside id="admin-mobile-sidebar" class="fixed inset-y-0 left-0 w-72 admin-sidebar z-50 transform -translate-x-full transition-transform duration-300 lg:hidden flex flex-col">
       <!-- Logo -->
-      <div class="h-16 flex items-center justify-between px-6 border-b border-charcoal-800">
-        <a href="/admin" class="text-xl font-serif font-bold">
-          Fashion<span class="text-gold-500">Store</span>
+      <div class="h-20 flex items-center justify-between px-6 border-b border-white/10">
+        <a href="/admin" class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <span class="text-xl font-bold text-white tracking-tight">
+            Fashion<span class="text-amber-400">Store</span>
+          </span>
         </a>
-        <button id="close-mobile-menu" class="text-charcoal-400 hover:text-white">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button id="close-mobile-menu" class="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
 
       <!-- Navigation -->
-      <nav class="flex-1 px-4 py-6 space-y-1">
-        {navItems.map((item) => (
+      <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+        {navItems.map((item, index) => (
           <a
             href={item.href}
-            class={`flex items-center px-4 py-3 rounded-lg transition-colors ${
+            class={`nav-item group flex items-center px-4 py-3.5 rounded-xl transition-all duration-300 ${
               isActive(item.href)
-                ? 'bg-charcoal-800 text-white shadow-lg'
-                : 'text-charcoal-300 hover:bg-charcoal-800 hover:text-white'
+                ? 'nav-item-active bg-gradient-to-r from-amber-500/20 to-orange-500/10 text-white border-l-2 border-amber-400'
+                : 'text-white/70 hover:text-white hover:bg-white/5'
             }`}
+            style={`animation-delay: ${index * 50}ms`}
           >
-            <span class="mr-3">
+            <span class={`flex items-center justify-center w-10 h-10 rounded-xl mr-3 transition-all duration-300 ${
+              isActive(item.href)
+                ? 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-amber-500/30'
+                : 'bg-white/10 group-hover:bg-white/20'
+            }`}>
               {item.icon === 'home' && (
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -112,22 +124,39 @@ const isActive = (href: string) => {
                 </svg>
               )}
             </span>
-            {item.label}
+            <div class="flex-1">
+              <span class="font-medium">{item.label}</span>
+              <p class="text-xs text-white/50 mt-0.5">{item.description}</p>
+            </div>
+            {isActive(item.href) && (
+              <div class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
+            )}
           </a>
         ))}
       </nav>
       
        <!-- User / Logout -->
-      <div class="p-4 border-t border-charcoal-800">
-        <a href="/" class="flex items-center px-4 py-2 text-charcoal-300 hover:text-white transition-colors text-sm">
-          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="p-4 border-t border-white/10">
+        <div class="bg-white/5 rounded-xl p-4 mb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-semibold">
+              {userEmail.charAt(0).toUpperCase()}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-white truncate">{userEmail}</p>
+              <p class="text-xs text-white/50">Administrador</p>
+            </div>
+          </div>
+        </div>
+        <a href="/" class="flex items-center px-4 py-2.5 text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-all duration-200 text-sm">
+          <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
           </svg>
           Volver a la tienda
         </a>
         <form action="/api/auth/logout" method="POST">
-          <button type="submit" class="w-full flex items-center px-4 py-2 text-charcoal-300 hover:text-white transition-colors text-sm">
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button type="submit" class="w-full flex items-center px-4 py-2.5 text-white/60 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-200 text-sm group">
+            <svg class="w-4 h-4 mr-3 transition-transform duration-200 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
             Cerrar sesión
@@ -136,27 +165,39 @@ const isActive = (href: string) => {
       </div>
     </aside>
 
-    <!-- Sidebar -->
-    <aside class="hidden lg:flex lg:flex-col w-64 bg-charcoal-900 text-white">
+    <!-- Desktop Sidebar -->
+    <aside class="hidden lg:flex lg:flex-col w-72 admin-sidebar flex-shrink-0">
       <!-- Logo -->
-      <div class="h-16 flex items-center px-6 border-b border-charcoal-800">
-        <a href="/admin" class="text-xl font-serif font-bold">
-          Fashion<span class="text-gold-500">Store</span>
+      <div class="h-20 flex items-center px-6 border-b border-white/10">
+        <a href="/admin" class="flex items-center gap-3 group">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30 transition-transform duration-300 group-hover:scale-110">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <span class="text-xl font-bold text-white tracking-tight">
+            Fashion<span class="text-amber-400">Store</span>
+          </span>
         </a>
       </div>
       
       <!-- Navigation -->
-      <nav class="flex-1 px-4 py-6 space-y-1">
-        {navItems.map((item) => (
+      <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+        {navItems.map((item, index) => (
           <a
             href={item.href}
-            class={`flex items-center px-4 py-3 rounded-lg transition-colors ${
+            class={`nav-item group flex items-center px-4 py-3.5 rounded-xl transition-all duration-300 ${
               isActive(item.href)
-                ? 'bg-charcoal-800 text-white'
-                : 'text-charcoal-300 hover:bg-charcoal-800 hover:text-white'
+                ? 'nav-item-active bg-gradient-to-r from-amber-500/20 to-orange-500/10 text-white border-l-2 border-amber-400'
+                : 'text-white/70 hover:text-white hover:bg-white/5'
             }`}
+            style={`animation-delay: ${index * 50}ms`}
           >
-            <span class="mr-3">
+            <span class={`flex items-center justify-center w-10 h-10 rounded-xl mr-3 transition-all duration-300 ${
+              isActive(item.href)
+                ? 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-amber-500/30'
+                : 'bg-white/10 group-hover:bg-white/20 group-hover:scale-110'
+            }`}>
               {item.icon === 'home' && (
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -184,22 +225,39 @@ const isActive = (href: string) => {
                 </svg>
               )}
             </span>
-            {item.label}
+            <div class="flex-1">
+              <span class="font-medium">{item.label}</span>
+              <p class="text-xs text-white/50 mt-0.5">{item.description}</p>
+            </div>
+            {isActive(item.href) && (
+              <div class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
+            )}
           </a>
         ))}
       </nav>
       
       <!-- User / Logout -->
-      <div class="p-4 border-t border-charcoal-800">
-        <a href="/" class="flex items-center px-4 py-2 text-charcoal-300 hover:text-white transition-colors text-sm">
-          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="p-4 border-t border-white/10">
+        <div class="bg-white/5 rounded-xl p-4 mb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-semibold">
+              {userEmail.charAt(0).toUpperCase()}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-white truncate">{userEmail}</p>
+              <p class="text-xs text-white/50">Administrador</p>
+            </div>
+          </div>
+        </div>
+        <a href="/" class="flex items-center px-4 py-2.5 text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-all duration-200 text-sm">
+          <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
           </svg>
           Volver a la tienda
         </a>
         <form action="/api/auth/logout" method="POST">
-          <button type="submit" class="w-full flex items-center px-4 py-2 text-charcoal-300 hover:text-white transition-colors text-sm">
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button type="submit" class="w-full flex items-center px-4 py-2.5 text-white/60 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-200 text-sm group">
+            <svg class="w-4 h-4 mr-3 transition-transform duration-200 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
             Cerrar sesión
@@ -211,35 +269,130 @@ const isActive = (href: string) => {
     <!-- Main Content -->
     <div class="flex-1 flex flex-col min-w-0">
       <!-- Top Bar -->
-      <header class="h-16 bg-white border-b border-charcoal-200 flex items-center justify-between px-4 lg:px-8 shadow-sm">
+      <header class="admin-header h-20 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-30">
         <!-- Mobile Menu Button -->
-        <button id="admin-mobile-menu" class="lg:hidden p-2 text-charcoal-600 hover:text-charcoal-900 transition-colors">
+        <button id="admin-mobile-menu" class="lg:hidden p-2.5 rounded-xl text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
         
-        <!-- Page Title -->
-        <h1 class="text-xl font-semibold text-charcoal-900 font-serif">{title}</h1>
+        <!-- Page Title with breadcrumb style -->
+        <div class="flex items-center gap-3">
+          <div class="hidden lg:flex items-center gap-2 text-sm text-gray-500">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            <span>Admin</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+          <h1 class="text-xl lg:text-2xl font-bold text-gray-900">{title}</h1>
+        </div>
         
         <!-- Admin Info -->
-        <div class="flex items-center space-x-4">
-          <span class="text-xs lg:text-sm text-charcoal-600 font-medium tracking-wide">Administrador</span>
-          <div class="w-8 h-8 rounded-full bg-charcoal-100 flex items-center justify-center border border-charcoal-200">
-            <svg class="w-4 h-4 text-charcoal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
+        <div class="flex items-center gap-4">
+          <!-- Quick Actions -->
+          <div class="hidden md:flex items-center gap-2">
+            <a href="/" target="_blank" class="p-2.5 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200" title="Ver tienda">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+          </div>
+          
+          <!-- Profile badge -->
+          <div class="flex items-center gap-3 pl-4 border-l border-gray-200">
+            <div class="text-right hidden sm:block">
+              <p class="text-sm font-medium text-gray-900">Admin</p>
+              <p class="text-xs text-gray-500">{userEmail.split('@')[0]}</p>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-semibold ring-2 ring-white shadow-lg">
+              {userEmail.charAt(0).toUpperCase()}
+            </div>
           </div>
         </div>
       </header>
       
       <!-- Page Content -->
-      <main class="flex-1 p-4 lg:p-8 overflow-auto bg-charcoal-50">
+      <main class="flex-1 p-4 lg:p-8 overflow-auto admin-content">
         <slot />
       </main>
     </div>
   </div>
 </BaseLayout>
+
+<style>
+  .admin-wrapper {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
+  }
+
+  .admin-sidebar {
+    background: linear-gradient(180deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
+    box-shadow: 4px 0 24px -8px rgba(0, 0, 0, 0.3);
+  }
+
+  .admin-header {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  .admin-content {
+    background: transparent;
+  }
+
+  .nav-item {
+    animation: slideInLeft 0.4s ease-out backwards;
+  }
+
+  .nav-item-active {
+    position: relative;
+  }
+
+  .nav-item-active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 60%;
+    background: linear-gradient(180deg, #fbbf24, #f97316);
+    border-radius: 0 4px 4px 0;
+  }
+
+  @keyframes slideInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* Custom scrollbar for sidebar */
+  .admin-sidebar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .admin-sidebar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .admin-sidebar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+  }
+
+  .admin-sidebar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+</style>
 
 <script is:inline>
   window.addEventListener('pageshow', (event) => {

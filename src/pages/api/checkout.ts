@@ -102,7 +102,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
                 customerName: customerName,
                 discountCode: discountCode || '',
                 items: JSON.stringify(items.map((i: any) => ({
-                    id: i.id,
+                    id: i.productId || i.id, // productId es el UUID real del producto
                     quantity: i.quantity,
                     size: i.size,
                     color: i.color

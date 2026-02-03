@@ -108,13 +108,20 @@ const statusConfig: Record<string, { label: string; color: string; icon: string;
     bgColor: 'bg-danger-50 border-danger-200',
     icon: '❌' 
   },
+  return_pending: { 
+    label: 'Devolución en Proceso', 
+    color: 'text-orange-700', 
+    bgColor: 'bg-orange-50 border-orange-200',
+    icon: '📦↩️' 
+  },
   refunded: { 
     label: 'Reembolsado', 
     color: 'text-gray-700', 
     bgColor: 'bg-gray-50 border-gray-200',
-    icon: '↩️' 
+    icon: '💰' 
   }
 };
+
 
 function getStatusConfig(status: string) {
   return statusConfig[status] || statusConfig.pending;
@@ -570,14 +577,15 @@ function canRequestReturn(status: string): boolean {
       const data = await response.json();
       
       if (data.success) {
-        returnModalSuccess!.textContent = '✅ Solicitud de devolución registrada correctamente';
+        const ticketInfo = data.ticketNumber ? `\n🎫 Ticket: ${data.ticketNumber}` : '';
+        returnModalSuccess!.innerHTML = `✅ Solicitud de devolución registrada correctamente${ticketInfo}<br><small>Te hemos enviado un email con las instrucciones</small>`;
         returnModalSuccess?.classList.remove('hidden');
         btn.textContent = 'Solicitud enviada';
         
-        // Close modal after 2 seconds
+        // Close modal after 3 seconds to let user see the ticket number
         setTimeout(() => {
           window.location.reload();
-        }, 2000);
+        }, 3000);
       } else {
         throw new Error(data.error || 'Error al procesar');
       }

@@ -1,6 +1,5 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
-import Button from '../../components/ui/Button.astro';
 import { supabase } from '../../lib/supabase';
 
 export const prerender = false; // SSR
@@ -11,48 +10,279 @@ const showFlashOffers = settings?.find(s => s.key === 'show_flash_offers')?.valu
 ---
 
 <AdminLayout title="Configuración">
-  <div class="max-w-3xl space-y-6">
-    <div class="bg-white rounded-xl shadow-sm border border-charcoal-100 p-6">
-      <div class="flex items-start justify-between gap-6">
+  <div class="max-w-4xl space-y-6">
+    <!-- Header Section -->
+    <div class="config-header">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </div>
         <div>
-          <h2 class="text-lg font-semibold text-navy-900">Ofertas Flash</h2>
-          <p class="text-sm text-charcoal-600 mt-1">
-            Activa o desactiva la sección de ofertas flash en la tienda.
-          </p>
+          <h2 class="text-xl font-bold text-gray-900">Ajustes de la tienda</h2>
+          <p class="text-gray-500">Personaliza la configuración de tu tienda online</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flash Offers Toggle -->
+    <div class="config-card">
+      <div class="flex items-start justify-between gap-6">
+        <div class="flex items-start gap-4">
+          <div class={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${showFlashOffers ? 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-amber-500/30' : 'bg-gray-100'}`}>
+            <svg class={`w-6 h-6 ${showFlashOffers ? 'text-white' : 'text-gray-400'}`} fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-gray-900">Ofertas Flash</h3>
+            <p class="text-gray-500 text-sm mt-1 max-w-md">
+              Activa la sección de ofertas flash en la página principal. Los productos marcados como "flash offer" aparecerán destacados.
+            </p>
+            <div class="mt-3">
+              <span class={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${showFlashOffers ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                <span class={`w-2 h-2 rounded-full mr-2 ${showFlashOffers ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`}></span>
+                {showFlashOffers ? 'Visible en tienda' : 'Oculto'}
+              </span>
+            </div>
+          </div>
         </div>
 
         <form id="flash-offers-form" class="flex items-center">
-          <label class="relative inline-flex items-center cursor-pointer">
+          <label class="toggle-switch">
             <input
               type="checkbox"
               id="flash-offers-toggle"
               class="sr-only peer"
               checked={showFlashOffers}
             />
-            <div class="w-11 h-6 bg-charcoal-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-navy-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-charcoal-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gold-600"></div>
-            <span class="ms-3 text-sm font-medium text-charcoal-700">
-              {showFlashOffers ? 'Activas' : 'Inactivas'}
-            </span>
+            <div class="toggle-track peer-checked:bg-gradient-to-r peer-checked:from-amber-400 peer-checked:to-orange-500">
+              <div class="toggle-thumb"></div>
+            </div>
           </label>
         </form>
       </div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm border border-charcoal-100 p-6">
-      <h2 class="text-lg font-semibold text-navy-900">Acciones</h2>
-      <p class="text-sm text-charcoal-600 mt-1">Atajos rápidos de administración.</p>
+    <!-- Quick Actions -->
+    <div class="config-card">
+      <div class="flex items-start gap-4 mb-6">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center shadow-lg shadow-slate-600/30">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-900">Acciones rápidas</h3>
+          <p class="text-gray-500 text-sm mt-1">
+            Accede rápidamente a las secciones más utilizadas del panel de administración.
+          </p>
+        </div>
+      </div>
 
-      <div class="mt-4 flex flex-col sm:flex-row gap-3">
-        <Button href="/admin" variant="outline">
-          Volver al dashboard
-        </Button>
-        <Button href="/admin/productos" variant="outline">
-          Gestionar productos
-        </Button>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <a href="/admin" class="action-card group">
+          <div class="action-icon bg-gradient-to-br from-indigo-500 to-purple-600">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+          </div>
+          <span class="text-sm font-semibold text-gray-700 group-hover:text-indigo-600 transition-colors">Dashboard</span>
+        </a>
+
+        <a href="/admin/productos" class="action-card group">
+          <div class="action-icon bg-gradient-to-br from-emerald-500 to-teal-600">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+          </div>
+          <span class="text-sm font-semibold text-gray-700 group-hover:text-emerald-600 transition-colors">Productos</span>
+        </a>
+
+        <a href="/admin/categorias" class="action-card group">
+          <div class="action-icon bg-gradient-to-br from-amber-500 to-orange-600">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+          </div>
+          <span class="text-sm font-semibold text-gray-700 group-hover:text-amber-600 transition-colors">Categorías</span>
+        </a>
+
+        <a href="/admin/pedidos" class="action-card group">
+          <div class="action-icon bg-gradient-to-br from-rose-500 to-pink-600">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+          </div>
+          <span class="text-sm font-semibold text-gray-700 group-hover:text-rose-600 transition-colors">Pedidos</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- System Info -->
+    <div class="config-card">
+      <div class="flex items-start gap-4 mb-6">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-900">Información del sistema</h3>
+          <p class="text-gray-500 text-sm mt-1">
+            Detalles técnicos de tu tienda online.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="info-item">
+          <span class="info-label">Plataforma</span>
+          <span class="info-value">Astro + Supabase</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Pagos</span>
+          <span class="info-value">Stripe</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Versión</span>
+          <span class="info-value">1.0.0</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Estado</span>
+          <span class="info-value flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Operativo
+          </span>
+        </div>
       </div>
     </div>
   </div>
 </AdminLayout>
+
+<style>
+  .config-header {
+    background: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  .config-card {
+    background: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    animation: fadeInUp 0.5s ease-out backwards;
+  }
+
+  .config-card:nth-child(2) { animation-delay: 0.1s; }
+  .config-card:nth-child(3) { animation-delay: 0.2s; }
+  .config-card:nth-child(4) { animation-delay: 0.3s; }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .toggle-switch {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+  }
+
+  .toggle-track {
+    position: relative;
+    width: 3.5rem;
+    height: 2rem;
+    background: #e5e7eb;
+    border-radius: 9999px;
+    transition: all 0.3s ease;
+  }
+
+  .toggle-thumb {
+    position: absolute;
+    top: 0.25rem;
+    left: 0.25rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    background: white;
+    border-radius: 9999px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+  }
+
+  .toggle-switch input:checked + .toggle-track .toggle-thumb {
+    transform: translateX(1.5rem);
+  }
+
+  .action-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    background: linear-gradient(145deg, #f9fafb, #f3f4f6);
+    border-radius: 1rem;
+    border: 1px solid #e5e7eb;
+    transition: all 0.3s ease;
+    text-align: center;
+    gap: 0.75rem;
+  }
+
+  .action-card:hover {
+    background: linear-gradient(145deg, #ffffff, #f9fafb);
+    border-color: #d1d5db;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.1);
+  }
+
+  .action-icon {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s ease;
+  }
+
+  .action-card:hover .action-icon {
+    transform: scale(1.1);
+  }
+
+  .info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.875rem 1rem;
+    background: #f9fafb;
+    border-radius: 0.75rem;
+    border: 1px solid #f3f4f6;
+  }
+
+  .info-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  .info-value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1f2937;
+  }
+</style>
 
 <script>
   const toggle = document.getElementById('flash-offers-toggle') as HTMLInputElement;
@@ -70,6 +300,9 @@ const showFlashOffers = settings?.find(s => s.key === 'show_flash_offers')?.valu
       if (!response.ok) {
         throw new Error('Failed to update setting');
       }
+      
+      // Refresh page to update visual state
+      window.location.reload();
     } catch (error) {
       console.error('Error updating flash offers:', error);
       toggle.checked = !toggle.checked;

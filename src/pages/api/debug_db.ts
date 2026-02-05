@@ -4,7 +4,7 @@ import { supabase, isSupabaseConfigured, createServerClient } from '../../lib/su
 export const GET: APIRoute = async () => {
     const configured = isSupabaseConfigured();
     let dbStatus = 'Desconectado';
-    let products = [];
+    let products: any[] = [];
     let error = null;
 
     if (configured) {

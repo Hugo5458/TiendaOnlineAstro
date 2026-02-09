@@ -14,17 +14,65 @@ const allCategories = await getCategories();
 
 const isMainCategory = slug === 'hombre' || slug === 'mujer';
 
-// Determine subcategories
-const subcategories = isMainCategory ? allCategories.filter(c => {
-  if (slug === 'hombre') {
-    return ['camisas', 'pantalones', 'camisetas', 'chalecos', 'trajes', 'accesorios', 
-            'camisas-hombre', 'pantalones-hombre', 'calzado-hombre'].includes(c.slug);
-  } else if (slug === 'mujer') {
-    return ['vestidos', 'blusas', 'faldas', 'calzado-mujer', 'accesorios', 
-            'camisas', 'pantalones'].includes(c.slug);
+// Encontrar la categoría actual
+const currentCategory = allCategories.find(c => c.slug === slug);
+
+// Encontrar categorías principales (Hombre = id 1, Mujer = id 2)
+const hombreCategory = allCategories.find(c => c.slug === 'hombre');
+const mujerCategory = allCategories.find(c => c.slug === 'mujer');
+
+// Listas exclusivas de cada categoría para fallback (cuando no hay parent_id)
+const hombreExclusiveSlugs = ['camisas-hombre', 'pantalones-hombre', 'calzado-hombre', 'trajes', 'chalecos', 'camisetas', 'camisas', 'pantalones'];
+const mujerExclusiveSlugs = ['vestidos', 'blusas', 'faldas', 'calzado-mujer', 'accesorios'];
+
+// Determinar categoría padre usando parent_id real de la base de datos
+let parentCategory: { name: string; slug: string } | null = null;
+if (!isMainCategory) {
+  // Primero intentar con parent_id de la base de datos
+  if (currentCategory?.parent_id) {
+    const parent = allCategories.find(c => c.id === currentCategory.parent_id);
+    if (parent) {
+      // Limpiar el nombre (quitar emojis si los tiene)
+      const cleanName = parent.name.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
+      parentCategory = { 
+        name: cleanName || parent.name, 
+        slug: parent.slug 
+      };
+    }
   }
-  return false;
-}) : [];
+  
+  // Fallback: si no encontró parent por parent_id, usar listas hardcodeadas
+  if (!parentCategory) {
+    if (hombreExclusiveSlugs.includes(slug)) {
+      parentCategory = { name: 'Hombre', slug: 'hombre' };
+    } else if (mujerExclusiveSlugs.includes(slug)) {
+      parentCategory = { name: 'Mujer', slug: 'mujer' };
+    }
+  }
+}
+
+// Listas de fallback para subcategorías
+const hombreSubcatSlugs = ['camisas', 'pantalones', 'camisetas', 'chalecos', 'trajes', 'accesorios', 
+                           'camisas-hombre', 'pantalones-hombre', 'calzado-hombre'];
+const mujerSubcatSlugs = ['vestidos', 'blusas', 'faldas', 'calzado-mujer', 'accesorios', 
+                          'camisas', 'pantalones'];
+
+// Determine subcategories - usar parent_id primero, fallback a listas hardcodeadas
+let subcategories: typeof allCategories = [];
+if (isMainCategory) {
+  // Primero intentar con parent_id
+  if (slug === 'hombre' && hombreCategory) {
+    subcategories = allCategories.filter(c => c.parent_id === hombreCategory.id);
+  } else if (slug === 'mujer' && mujerCategory) {
+    subcategories = allCategories.filter(c => c.parent_id === mujerCategory.id);
+  }
+  
+  // Si no encontró subcategorías por parent_id, usar fallback
+  if (subcategories.length === 0) {
+    const fallbackSlugs = slug === 'hombre' ? hombreSubcatSlugs : mujerSubcatSlugs;
+    subcategories = allCategories.filter(c => fallbackSlugs.includes(c.slug));
+  }
+}
 
 // Fetch products
 let allProducts = [];
@@ -37,14 +85,26 @@ if (isMainCategory) {
 // Filter products for main categories
 let products = [];
 if (isMainCategory) {
+  // Obtener todos los slugs de subcategorías (tanto por parent_id como fallback)
   const subcategorySlugs = subcategories.map(s => s.slug);
-  products = allProducts.filter(p => subcategorySlugs.includes(p.category?.slug || ''));
+  
+  // También incluir los slugs hardcodeados para mayor cobertura
+  const allRelevantSlugs = slug === 'hombre' 
+    ? [...new Set([...subcategorySlugs, ...hombreSubcatSlugs])]
+    : [...new Set([...subcategorySlugs, ...mujerSubcatSlugs])];
+  
+  products = allProducts.filter(p => allRelevantSlugs.includes(p.category?.slug || ''));
 } else {
   products = allProducts.filter(p => p.category?.slug === slug);
 }
 
-// Capitalize category name
-const categoryName = slug.charAt(0).toUpperCase() + slug.slice(1).replace('-', ' ');
+// Capitalize category name - usar el nombre real de la categoría si existe
+let categoryName = slug.charAt(0).toUpperCase() + slug.slice(1).replace(/-/g, ' ');
+if (currentCategory) {
+  // Limpiar emojis del nombre
+  const cleanName = currentCategory.name.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
+  categoryName = cleanName || categoryName;
+}
 
 const heroImages: Record<string, string> = {
   'hombre': 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=1600&h=800&fit=crop',
@@ -58,12 +118,62 @@ const heroImage = heroImages[slug] || heroImages['hombre'];
 ---
 
 <PublicLayout title={`${categoryName} | FashionStore`} description={`Compra en la categoría ${categoryName}`}>
+  <!-- Breadcrumb Navigation -->
+  <nav class="bg-gray-50 border-b border-gray-100">
+    <div class="max-w-screen-2xl mx-auto px-4 lg:px-8 py-4">
+      <div class="flex items-center justify-between">
+        <!-- Breadcrumb -->
+        <ol class="flex items-center gap-2 text-sm">
+          <li>
+            <a href="/" class="text-gray-500 hover:text-black transition-colors flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+              </svg>
+              <span class="hidden sm:inline">Inicio</span>
+            </a>
+          </li>
+          {parentCategory && (
+            <>
+              <li class="text-gray-300">/</li>
+              <li>
+                <a href={`/categoria/${parentCategory.slug}`} class="text-gray-500 hover:text-black transition-colors">
+                  {parentCategory.name}
+                </a>
+              </li>
+            </>
+          )}
+          <li class="text-gray-300">/</li>
+          <li class="font-medium text-black">{categoryName}</li>
+        </ol>
+
+        <!-- Back Button -->
+        <a 
+          href={parentCategory ? `/categoria/${parentCategory.slug}` : '/'}
+          class="flex items-center gap-2 text-sm text-gray-600 hover:text-black transition-colors group"
+        >
+          <svg class="w-5 h-5 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          </svg>
+          <span class="hidden sm:inline">
+            {parentCategory ? `Volver a ${parentCategory.name}` : 'Volver al inicio'}
+          </span>
+          <span class="sm:hidden">Volver</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
   <!-- Hero Banner - P&B Style -->
   <section class="relative aspect-[16/9] md:aspect-[21/9] overflow-hidden">
     <img src={heroImage} alt={categoryName} class="absolute inset-0 w-full h-full object-cover" />
     <div class="absolute inset-0 bg-black/30"></div>
     <div class="absolute inset-0 flex items-center justify-center">
       <div class="text-center">
+        {parentCategory && (
+          <span class="text-white/70 text-xs uppercase tracking-widest mb-2 block">
+            {parentCategory.name}
+          </span>
+        )}
         <h1 class="text-4xl md:text-6xl lg:text-7xl text-white uppercase tracking-widest font-light">
           {categoryName}
         </h1>

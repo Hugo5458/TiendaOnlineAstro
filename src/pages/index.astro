@@ -13,11 +13,78 @@ const categories = await getCategories();
 // Separar categorías principales (Hombre y Mujer) de subcategorías
 const mainCategories = categories.filter(c => c.slug === 'hombre' || c.slug === 'mujer');
 const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== 'mujer');
+
+// Quick navigation sections
+const quickNavSections = [
+  { id: 'colecciones', label: 'Colecciones', icon: 'sparkles' },
+  { id: 'novedades', label: 'Novedades', icon: 'star' },
+  { id: 'categorias', label: 'Categorías', icon: 'grid' },
+  { id: 'destacados', label: 'Destacados', icon: 'fire' },
+  ...(showFlashOffers && flashOfferProducts.length > 0 ? [{ id: 'ofertas', label: 'Ofertas', icon: 'tag' }] : []),
+  { id: 'newsletter', label: 'Newsletter', icon: 'mail' },
+];
 ---
 
 <PublicLayout title="FashionStore - Moda Online para Hombre y Mujer">
-  <!-- Hero Section - P&B Style with Full-Width Images -->
-  <section class="relative">
+  <!-- Quick Navigation Bar -->
+  <nav class="sticky top-16 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100 py-3 hidden md:block" id="quick-nav">
+    <div class="max-w-screen-2xl mx-auto px-4 lg:px-8">
+      <div class="flex items-center justify-center gap-8">
+        {quickNavSections.map((section) => (
+          <a 
+            href={`#${section.id}`}
+            class="quick-nav-link group flex items-center gap-2 text-xs uppercase tracking-widest text-gray-500 hover:text-black transition-colors"
+          >
+            {section.icon === 'sparkles' && (
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+              </svg>
+            )}
+            {section.icon === 'star' && (
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+              </svg>
+            )}
+            {section.icon === 'grid' && (
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+              </svg>
+            )}
+            {section.icon === 'fire' && (
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 18a3.75 3.75 0 00.495-7.467 5.99 5.99 0 00-1.925 3.546 5.974 5.974 0 01-2.133-1A3.75 3.75 0 0012 18z" />
+              </svg>
+            )}
+            {section.icon === 'tag' && (
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" />
+              </svg>
+            )}
+            {section.icon === 'mail' && (
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+              </svg>
+            )}
+            <span class="relative">
+              {section.label}
+              <span class="absolute -bottom-1 left-0 w-0 h-px bg-black transition-all group-hover:w-full"></span>
+            </span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </nav>
+
+  <!-- SECTION 1: Hero Section - Colecciones Principales -->
+  <section id="colecciones" class="relative scroll-mt-32">
+    <!-- Section Header -->
+    <div class="bg-white py-8 text-center">
+      <span class="text-xs uppercase tracking-widest text-gray-400 mb-2 block">Descubre tu estilo</span>
+      <h1 class="text-3xl md:text-4xl uppercase tracking-widest font-light">Colecciones</h1>
+    </div>
+    
     <!-- Main Hero Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2">
       <!-- Hombre -->
@@ -27,9 +94,10 @@ const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== '
           alt="Colección Hombre" 
           class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
-        <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent"></div>
         <div class="absolute bottom-8 left-8 md:bottom-12 md:left-12">
-          <h2 class="text-white text-3xl md:text-5xl uppercase tracking-widest font-light">Hombre</h2>
+          <span class="text-white/70 text-xs uppercase tracking-widest mb-2 block">Nueva colección</span>
+          <h2 class="text-white text-4xl md:text-6xl uppercase tracking-widest font-light">Hombre</h2>
           <span class="inline-block mt-4 text-white text-xs uppercase tracking-widest border-b border-white pb-1 group-hover:border-white/50 transition-colors">
             Ver colección
           </span>
@@ -43,9 +111,10 @@ const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== '
           alt="Colección Mujer" 
           class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
-        <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent"></div>
         <div class="absolute bottom-8 left-8 md:bottom-12 md:left-12">
-          <h2 class="text-white text-3xl md:text-5xl uppercase tracking-widest font-light">Mujer</h2>
+          <span class="text-white/70 text-xs uppercase tracking-widest mb-2 block">Nueva colección</span>
+          <h2 class="text-white text-4xl md:text-6xl uppercase tracking-widest font-light">Mujer</h2>
           <span class="inline-block mt-4 text-white text-xs uppercase tracking-widest border-b border-white pb-1 group-hover:border-white/50 transition-colors">
             Ver colección
           </span>
@@ -54,200 +123,279 @@ const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== '
     </div>
   </section>
 
-  <!-- Sales Banner - P&B Style -->
+  <!-- Sales Banner - Conditional -->
   {showFlashOffers && flashOfferProducts.length > 0 && (
-    <section class="bg-accent-500 py-4">
-      <div class="max-w-screen-2xl mx-auto px-4 lg:px-8 flex items-center justify-center gap-4">
-        <span class="text-white text-sm uppercase tracking-widest">Rebajas hasta -50%</span>
-        <a href="/productos?ofertas=true" class="text-white text-xs uppercase tracking-wider underline hover:no-underline">
-          Ver todo
+    <section class="bg-gradient-to-r from-red-600 via-red-500 to-orange-500 py-4">
+      <div class="max-w-screen-2xl mx-auto px-4 lg:px-8 flex items-center justify-center gap-6">
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5 text-white animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+          </svg>
+          <span class="text-white text-sm md:text-base font-medium uppercase tracking-wider">Rebajas hasta -50%</span>
+          <svg class="w-5 h-5 text-white animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+          </svg>
+        </div>
+        <a href="/productos?ofertas=true" class="text-white text-xs uppercase tracking-wider underline hover:no-underline font-medium">
+          Ver ofertas
         </a>
       </div>
     </section>
   )}
 
-  <!-- Categories Carousel - P&B Style -->
-  <section class="py-12 lg:py-16 border-b border-gray-100">
+  <!-- SECTION 2: Novedades - First to capture attention -->
+  <section id="novedades" class="py-16 lg:py-24 bg-white scroll-mt-32">
     <div class="max-w-screen-2xl mx-auto px-4 lg:px-8">
-      <div class="flex items-center justify-between mb-8">
-        <h2 class="text-sm uppercase tracking-widest">Categorías</h2>
-        <a href="/productos" class="text-xs uppercase tracking-wider text-gray-500 hover:text-black transition-colors">
-          Ver todo
-        </a>
+      <!-- Section Header -->
+      <div class="text-center mb-12">
+        <span class="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-gray-400 mb-3">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+          </svg>
+          Recién llegados
+        </span>
+        <h2 class="text-2xl md:text-4xl uppercase tracking-widest font-light mb-3">Novedades</h2>
+        <p class="text-gray-500 text-sm max-w-xl mx-auto">Descubre las últimas tendencias que acabamos de recibir. Prendas exclusivas para estar siempre a la moda.</p>
       </div>
       
-      <!-- Horizontal Scroll Categories -->
-      <div class="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
-        {subCategories.slice(0, 8).map((category) => (
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-8">
+        {newProducts.slice(0, 4).map((product) => (
+          <ProductCard product={product} />
+        ))}
+      </div>
+      
+      <div class="text-center mt-10">
+        <a href="/productos" class="inline-block px-10 py-4 border-2 border-black text-black text-xs uppercase tracking-widest hover:bg-black hover:text-white transition-all duration-300">
+          Ver todas las novedades
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 3: Categorías -->
+  <section id="categorias" class="py-16 lg:py-24 bg-gray-50 scroll-mt-32">
+    <div class="max-w-screen-2xl mx-auto px-4 lg:px-8">
+      <!-- Section Header -->
+      <div class="text-center mb-12">
+        <span class="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-gray-400 mb-3">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+          </svg>
+          Explora por tipo
+        </span>
+        <h2 class="text-2xl md:text-4xl uppercase tracking-widest font-light mb-3">Categorías</h2>
+        <p class="text-gray-500 text-sm max-w-xl mx-auto">Encuentra exactamente lo que buscas navegando por nuestras categorías de productos.</p>
+      </div>
+      
+      <!-- Categories Grid - More organized than carousel -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+        {subCategories.slice(0, 6).map((category) => (
           <a 
             href={`/categoria/${category.slug}`}
-            class="flex-shrink-0 group"
+            class="group text-center"
           >
-            <div class="w-32 h-32 md:w-40 md:h-40 rounded-full bg-gray-100 overflow-hidden mb-3 group-hover:opacity-80 transition-opacity">
-              <div class="w-full h-full flex items-center justify-center text-gray-400">
-                <svg class="w-10 h-10" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+            <div class="aspect-square rounded-2xl bg-white shadow-sm overflow-hidden mb-4 group-hover:shadow-lg transition-all duration-300 flex items-center justify-center">
+              <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <svg class="w-8 h-8 text-gray-400 group-hover:text-black transition-colors" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
                 </svg>
               </div>
             </div>
-            <span class="block text-center text-xs uppercase tracking-wider">
+            <h3 class="text-sm uppercase tracking-wider font-medium group-hover:text-gray-600 transition-colors">
               {category.name}
-            </span>
+            </h3>
           </a>
         ))}
-      </div>
-    </div>
-  </section>
-
-  <!-- Flash Offers - P&B Style -->
-  {showFlashOffers && flashOfferProducts.length > 0 && (
-    <section class="py-12 lg:py-16 border-b border-gray-100">
-      <div class="max-w-screen-2xl mx-auto px-4 lg:px-8">
-        <div class="flex items-center justify-between mb-8">
-          <div class="flex items-center gap-4">
-            <h2 class="text-sm uppercase tracking-widest text-accent-500">Ofertas</h2>
-            <span class="text-xs text-gray-400">Tiempo limitado</span>
-          </div>
-          <a href="/productos?ofertas=true" class="text-xs uppercase tracking-wider text-gray-500 hover:text-black transition-colors">
-            Ver todo
-          </a>
-        </div>
-        
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
-          {flashOfferProducts.map((product) => (
-            <ProductCard product={product} />
-          ))}
-        </div>
-      </div>
-    </section>
-  )}
-
-  <!-- Featured Products - P&B Style -->
-  <section class="py-12 lg:py-16 border-b border-gray-100">
-    <div class="max-w-screen-2xl mx-auto px-4 lg:px-8">
-      <div class="flex items-center justify-between mb-8">
-        <h2 class="text-sm uppercase tracking-widest">Lo más vendido</h2>
-        <a href="/productos" class="text-xs uppercase tracking-wider text-gray-500 hover:text-black transition-colors">
-          Ver todo
-        </a>
       </div>
       
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
-        {featuredProducts.map((product) => (
-          <ProductCard product={product} />
-        ))}
+      <div class="text-center mt-10">
+        <a href="/productos" class="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-gray-500 hover:text-black transition-colors">
+          Ver todas las categorías
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+          </svg>
+        </a>
       </div>
     </div>
   </section>
 
-  <!-- Editorial Banner - P&B Style -->
+  <!-- SECTION 4: Editorial Banner -->
   <section class="relative aspect-[16/9] md:aspect-[21/9] overflow-hidden">
     <img 
       src="https://images.unsplash.com/photo-1445205170230-053b83016050?w=2000&h=800&fit=crop" 
       alt="Nueva Colección" 
       class="w-full h-full object-cover"
     />
-    <div class="absolute inset-0 bg-black/20"></div>
+    <div class="absolute inset-0 bg-black/30"></div>
     <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-      <span class="text-white text-xs uppercase tracking-widest mb-4">Nueva Temporada</span>
-      <h2 class="text-white text-4xl md:text-6xl lg:text-7xl uppercase tracking-widest font-light mb-6">Colección 2026</h2>
+      <span class="text-white/80 text-xs uppercase tracking-widest mb-4 animate-fade-in">Nueva Temporada</span>
+      <h2 class="text-white text-4xl md:text-6xl lg:text-7xl uppercase tracking-widest font-light mb-2">Colección 2026</h2>
+      <p class="text-white/70 text-sm md:text-base max-w-lg mb-8">Diseños exclusivos que definen las tendencias de esta temporada</p>
       <a 
         href="/productos" 
-        class="inline-block px-8 py-3 bg-white text-black text-xs uppercase tracking-widest hover:bg-black hover:text-white transition-colors"
+        class="inline-block px-10 py-4 bg-white text-black text-xs uppercase tracking-widest hover:bg-black hover:text-white transition-all duration-300"
       >
-        Descubrir
+        Descubrir ahora
       </a>
     </div>
   </section>
 
-  <!-- New Arrivals - P&B Style -->
-  <section class="py-12 lg:py-16 border-b border-gray-100">
+  <!-- SECTION 5: Productos Destacados -->
+  <section id="destacados" class="py-16 lg:py-24 bg-white scroll-mt-32">
     <div class="max-w-screen-2xl mx-auto px-4 lg:px-8">
-      <div class="flex items-center justify-between mb-8">
-        <h2 class="text-sm uppercase tracking-widest">Novedades</h2>
-        <a href="/productos" class="text-xs uppercase tracking-wider text-gray-500 hover:text-black transition-colors">
-          Ver todo
-        </a>
+      <!-- Section Header -->
+      <div class="text-center mb-12">
+        <span class="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-gray-400 mb-3">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 18a3.75 3.75 0 00.495-7.467 5.99 5.99 0 00-1.925 3.546 5.974 5.974 0 01-2.133-1A3.75 3.75 0 0012 18z" />
+          </svg>
+          Los favoritos de nuestros clientes
+        </span>
+        <h2 class="text-2xl md:text-4xl uppercase tracking-widest font-light mb-3">Lo Más Vendido</h2>
+        <p class="text-gray-500 text-sm max-w-xl mx-auto">Los productos más populares de nuestra tienda. Calidad y estilo que nuestros clientes adoran.</p>
       </div>
       
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
-        {newProducts.slice(0, 4).map((product) => (
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-8">
+        {featuredProducts.map((product) => (
           <ProductCard product={product} />
         ))}
       </div>
+      
+      <div class="text-center mt-10">
+        <a href="/productos" class="inline-block px-10 py-4 bg-black text-white text-xs uppercase tracking-widest hover:bg-gray-800 transition-all duration-300">
+          Ver todos los productos
+        </a>
+      </div>
     </div>
   </section>
 
-  <!-- Trust Badges - P&B Minimal Style -->
-  <section class="py-12 lg:py-16 border-b border-gray-100">
+  <!-- SECTION 6: Flash Offers - Conditional -->
+  {showFlashOffers && flashOfferProducts.length > 0 && (
+    <section id="ofertas" class="py-16 lg:py-24 bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 scroll-mt-32">
+      <div class="max-w-screen-2xl mx-auto px-4 lg:px-8">
+        <!-- Section Header -->
+        <div class="text-center mb-12">
+          <span class="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-red-500 mb-3">
+            <svg class="w-4 h-4 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+            </svg>
+            Tiempo limitado
+            <svg class="w-4 h-4 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+            </svg>
+          </span>
+          <h2 class="text-2xl md:text-4xl uppercase tracking-widest font-light mb-3 text-red-600">Ofertas Flash</h2>
+          <p class="text-gray-600 text-sm max-w-xl mx-auto">Aprovecha estos descuentos exclusivos antes de que se agoten. ¡No te los pierdas!</p>
+        </div>
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-8">
+          {flashOfferProducts.map((product) => (
+            <ProductCard product={product} />
+          ))}
+        </div>
+        
+        <div class="text-center mt-10">
+          <a href="/productos?ofertas=true" class="inline-block px-10 py-4 bg-red-600 text-white text-xs uppercase tracking-widest hover:bg-red-700 transition-all duration-300">
+            Ver todas las ofertas
+          </a>
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- SECTION 7: Trust Badges / Beneficios -->
+  <section class="py-16 lg:py-20 bg-gray-900 text-white">
     <div class="max-w-screen-2xl mx-auto px-4 lg:px-8">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
-        <div>
-          <div class="flex items-center justify-center mb-3">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
-            </svg>
+      <!-- Section Header -->
+      <div class="text-center mb-12">
+        <h2 class="text-xl md:text-2xl uppercase tracking-widest font-light mb-3">¿Por qué elegirnos?</h2>
+        <p class="text-gray-400 text-sm">Comprometidos con tu satisfacción en cada compra</p>
+      </div>
+      
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12">
+        <div class="text-center group">
+          <div class="flex items-center justify-center mb-4">
+            <div class="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+              </svg>
+            </div>
           </div>
-          <h3 class="text-xs uppercase tracking-widest mb-1">Envío gratis</h3>
-          <p class="text-xs text-gray-500">En pedidos +50€</p>
+          <h3 class="text-sm uppercase tracking-widest mb-2 font-medium">Envío Gratis</h3>
+          <p class="text-xs text-gray-400">En pedidos superiores a 50€</p>
         </div>
         
-        <div>
-          <div class="flex items-center justify-center mb-3">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-            </svg>
+        <div class="text-center group">
+          <div class="flex items-center justify-center mb-4">
+            <div class="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+            </div>
           </div>
-          <h3 class="text-xs uppercase tracking-widest mb-1">Devolución gratis</h3>
-          <p class="text-xs text-gray-500">30 días para devolver</p>
+          <h3 class="text-sm uppercase tracking-widest mb-2 font-medium">Devolución Gratis</h3>
+          <p class="text-xs text-gray-400">30 días para devolver</p>
         </div>
         
-        <div>
-          <div class="flex items-center justify-center mb-3">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-            </svg>
+        <div class="text-center group">
+          <div class="flex items-center justify-center mb-4">
+            <div class="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+              </svg>
+            </div>
           </div>
-          <h3 class="text-xs uppercase tracking-widest mb-1">Pago seguro</h3>
-          <p class="text-xs text-gray-500">Transacciones protegidas</p>
+          <h3 class="text-sm uppercase tracking-widest mb-2 font-medium">Pago Seguro</h3>
+          <p class="text-xs text-gray-400">Transacciones 100% protegidas</p>
         </div>
         
-        <div>
-          <div class="flex items-center justify-center mb-3">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
-            </svg>
+        <div class="text-center group">
+          <div class="flex items-center justify-center mb-4">
+            <div class="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+              <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
+              </svg>
+            </div>
           </div>
-          <h3 class="text-xs uppercase tracking-widest mb-1">Atención 24/7</h3>
-          <p class="text-xs text-gray-500">Estamos para ayudarte</p>
+          <h3 class="text-sm uppercase tracking-widest mb-2 font-medium">Atención 24/7</h3>
+          <p class="text-xs text-gray-400">Siempre disponibles para ti</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Newsletter Section - P&B Style -->
-  <section class="py-16 lg:py-24">
-    <div class="max-w-xl mx-auto px-4 text-center">
-      <h2 class="text-2xl md:text-3xl uppercase tracking-widest font-light mb-4">Newsletter</h2>
-      <p class="text-sm text-gray-600 mb-8">
-        Suscríbete y consigue un 10% de descuento en tu primera compra. Además, recibe las últimas novedades y ofertas exclusivas.
+  <!-- SECTION 8: Newsletter -->
+  <section id="newsletter" class="py-20 lg:py-28 bg-white scroll-mt-32">
+    <div class="max-w-2xl mx-auto px-4 text-center">
+      <div class="mb-6">
+        <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
+          <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+          </svg>
+        </div>
+      </div>
+      <span class="text-xs uppercase tracking-widest text-gray-400 mb-3 block">Únete a nuestra comunidad</span>
+      <h2 class="text-2xl md:text-4xl uppercase tracking-widest font-light mb-4">Newsletter</h2>
+      <p class="text-gray-600 text-sm md:text-base mb-8 max-w-lg mx-auto">
+        Suscríbete y consigue un <strong>10% de descuento</strong> en tu primera compra. Además, recibe las últimas novedades y ofertas exclusivas directamente en tu email.
       </p>
       <form class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
         <input 
           type="email" 
           placeholder="Tu email"
           required
-          class="flex-1 px-4 py-3 border border-gray-200 text-sm focus:border-black focus:outline-none transition-colors text-center sm:text-left"
+          class="flex-1 px-5 py-4 border-2 border-gray-200 text-sm focus:border-black focus:outline-none transition-colors rounded-none"
         />
         <button 
           type="submit" 
-          class="px-8 py-3 bg-black text-white text-xs uppercase tracking-widest hover:bg-gray-800 transition-colors"
+          class="px-8 py-4 bg-black text-white text-xs uppercase tracking-widest hover:bg-gray-800 transition-colors"
         >
           Suscribirse
         </button>
       </form>
-      <p class="text-xs text-gray-400 mt-4">
-        Al suscribirte aceptas nuestra política de privacidad
+      <p class="text-xs text-gray-400 mt-6">
+        Al suscribirte aceptas nuestra <a href="#" class="underline hover:text-black">política de privacidad</a>
       </p>
     </div>
   </section>
@@ -262,4 +410,57 @@ const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== '
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+  
+  /* Smooth scroll behavior */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Animation for fade in */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+  }
+  
+  /* Quick nav active state handled by JS */
+  .quick-nav-link.active {
+    color: black;
+  }
+  .quick-nav-link.active span::after {
+    width: 100%;
+  }
 </style>
+
+<script>
+  // Quick navigation scroll spy
+  document.addEventListener('DOMContentLoaded', () => {
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.quick-nav-link');
+    
+    const observerOptions = {
+      root: null,
+      rootMargin: '-20% 0px -80% 0px',
+      threshold: 0
+    };
+    
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const activeId = entry.target.getAttribute('id');
+          navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === `#${activeId}`) {
+              link.classList.add('active');
+            }
+          });
+        }
+      });
+    }, observerOptions);
+    
+    sections.forEach(section => observer.observe(section));
+  });
+</script>

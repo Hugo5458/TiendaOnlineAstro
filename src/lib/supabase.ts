@@ -101,6 +101,22 @@ export interface SiteSetting {
     updated_at: string;
 }
 
+export interface DiscountCode {
+    id: string;
+    code: string;
+    description: string | null;
+    discount_type: 'percentage' | 'fixed';
+    discount_value: number;
+    min_purchase: number;
+    max_uses: number | null;
+    current_uses: number;
+    is_active: boolean;
+    starts_at: string | null;
+    expires_at: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
 // Demo data for when Supabase is not configured
 export const demoCategories: Category[] = [
     // Categorías principales

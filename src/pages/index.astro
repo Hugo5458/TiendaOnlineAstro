@@ -8,74 +8,22 @@ const showFlashOffers = await getShowFlashOffers();
 const flashOfferProducts = showFlashOffers ? await getProducts({ flashOffer: true, limit: 4 }) : [];
 const featuredProducts = await getProducts({ featured: true, limit: 8 });
 const newProducts = await getProducts({ limit: 8 });
-const categories = await getCategories();
-
 // Separar categorías principales (Hombre y Mujer) de subcategorías
+const cleanName = (name: string) => name.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').trim();
+
+const categoriesRaw = await getCategories();
+const categories = categoriesRaw.map(c => ({
+  ...c,
+  name: cleanName(c.name)
+}));
+
 const mainCategories = categories.filter(c => c.slug === 'hombre' || c.slug === 'mujer');
 const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== 'mujer');
-
-// Quick navigation sections
-const quickNavSections = [
-  { id: 'colecciones', label: 'Colecciones', icon: 'sparkles' },
-  { id: 'novedades', label: 'Novedades', icon: 'star' },
-  { id: 'categorias', label: 'Categorías', icon: 'grid' },
-  { id: 'destacados', label: 'Destacados', icon: 'fire' },
-  ...(showFlashOffers && flashOfferProducts.length > 0 ? [{ id: 'ofertas', label: 'Ofertas', icon: 'tag' }] : []),
-  { id: 'newsletter', label: 'Newsletter', icon: 'mail' },
-];
 ---
 
 <PublicLayout title="FashionStore - Moda Online para Hombre y Mujer">
   <!-- Quick Navigation Bar -->
-  <nav class="sticky top-16 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100 py-3 hidden md:block" id="quick-nav">
-    <div class="max-w-screen-2xl mx-auto px-4 lg:px-8">
-      <div class="flex items-center justify-center gap-8">
-        {quickNavSections.map((section) => (
-          <a 
-            href={`#${section.id}`}
-            class="quick-nav-link group flex items-center gap-2 text-xs uppercase tracking-widest text-gray-500 hover:text-black transition-colors"
-          >
-            {section.icon === 'sparkles' && (
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
-              </svg>
-            )}
-            {section.icon === 'star' && (
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-              </svg>
-            )}
-            {section.icon === 'grid' && (
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-              </svg>
-            )}
-            {section.icon === 'fire' && (
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 18a3.75 3.75 0 00.495-7.467 5.99 5.99 0 00-1.925 3.546 5.974 5.974 0 01-2.133-1A3.75 3.75 0 0012 18z" />
-              </svg>
-            )}
-            {section.icon === 'tag' && (
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" />
-              </svg>
-            )}
-            {section.icon === 'mail' && (
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-              </svg>
-            )}
-            <span class="relative">
-              {section.label}
-              <span class="absolute -bottom-1 left-0 w-0 h-px bg-black transition-all group-hover:w-full"></span>
-            </span>
-          </a>
-        ))}
-      </div>
-    </div>
-  </nav>
+  <!-- Quick Navigation Bar Removed -->
 
   <!-- SECTION 1: Hero Section - Colecciones Principales -->
   <section id="colecciones" class="relative scroll-mt-32">

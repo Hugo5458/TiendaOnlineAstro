@@ -258,7 +258,7 @@ export const prerender = false; // SSR for cart
       // Add event listeners
       document.querySelectorAll('.qty-decrease').forEach(btn => {
         btn.addEventListener('click', (e) => {
-          const id = e.currentTarget.dataset.id;
+          const id = (e.currentTarget as HTMLElement).dataset.id!;
           const item = items.find(i => i.id === id);
           if (item && item.quantity > 1) {
             updateCartItemQuantity(id, item.quantity - 1);
@@ -270,7 +270,7 @@ export const prerender = false; // SSR for cart
       
       document.querySelectorAll('.qty-increase').forEach(btn => {
         btn.addEventListener('click', (e) => {
-          const id = e.currentTarget.dataset.id;
+          const id = (e.currentTarget as HTMLElement).dataset.id!;
           const item = items.find(i => i.id === id);
           if (item && item.quantity < item.maxStock) updateCartItemQuantity(id, item.quantity + 1);
         });
@@ -278,7 +278,7 @@ export const prerender = false; // SSR for cart
       
       document.querySelectorAll('.remove-item').forEach(btn => {
         btn.addEventListener('click', (e) => {
-          const id = e.currentTarget.dataset.id;
+          const id = (e.currentTarget as HTMLElement).dataset.id!;
           removeFromCart(id);
         });
       });

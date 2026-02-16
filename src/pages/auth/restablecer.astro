@@ -100,11 +100,11 @@ export const prerender = false;
     auth: { flowType: 'pkce' }
   });
 
-  const loadingState = document.getElementById('loading-state');
-  const errorState = document.getElementById('error-state');
-  const resetForm = document.getElementById('reset-form');
-  const successState = document.getElementById('success-state');
-  const formError = document.getElementById('form-error');
+  const loadingState = document.getElementById('loading-state')!;
+  const errorState = document.getElementById('error-state')!;
+  const resetForm = document.getElementById('reset-form')!;
+  const successState = document.getElementById('success-state')!;
+  const formError = document.getElementById('form-error')!;
 
   // Inicialización
   async function init() {
@@ -141,7 +141,7 @@ export const prerender = false;
                  // Ignore error if it's just 'Auth session missing' (we'll check session next)
                  console.warn("Auth exchange warning:", error.message);
              }
-           } catch (e) {
+           } catch (e: any) {
              console.error("Auth exchange error:", e);
            }
         }
@@ -172,7 +172,7 @@ export const prerender = false;
         loadingState.classList.add('hidden');
         resetForm.classList.remove('hidden');
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error init:', error);
         loadingState.classList.add('hidden');
         errorState.classList.remove('hidden');
@@ -181,7 +181,7 @@ export const prerender = false;
         const msg = document.getElementById('error-msg');
         if (msg && error.message) {
             // translate common errors
-            if (error.message.includes("expired")) {
+            if (error.message.includes("expired") && msg.nextElementSibling) {
                  msg.nextElementSibling.textContent = "El enlace ha expirado. Por favor solicita uno nuevo.";
             }
         }
@@ -208,7 +208,9 @@ export const prerender = false;
     }
 
     formError.classList.add('hidden');
-    const submitBtn = resetForm.querySelector('button[type="submit"]');
+    const submitBtn = resetForm.querySelector('button[type="submit"]') as HTMLButtonElement;
+    if (!submitBtn) return;
+    
     const originalText = submitBtn.textContent;
     submitBtn.textContent = 'Actualizando...';
     submitBtn.disabled = true;
@@ -225,7 +227,7 @@ export const prerender = false;
         // Normalmente no hace falta, pero es buena práctica de seguridad o UX
         // await supabase.auth.signOut(); 
 
-    } catch (err) {
+    } catch (err: any) {
         formError.textContent = err.message || 'Error al actualizar contraseña';
         formError.classList.remove('hidden');
         submitBtn.textContent = originalText;

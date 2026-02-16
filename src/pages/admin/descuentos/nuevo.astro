@@ -1,0 +1,397 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+
+export const prerender = false;
+---
+
+<AdminLayout title="Nuevo Código de Descuento">
+  <div class="max-w-3xl mx-auto">
+    <!-- Back button -->
+    <a href="/admin/descuentos" class="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors mb-6 group">
+      <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      <span class="font-medium">Volver a descuentos</span>
+    </a>
+
+    <!-- Form Card -->
+    <div class="form-card">
+      <div class="form-header">
+        <div class="flex items-center gap-3">
+          <div class="p-2.5 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/30">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-gray-900">Crear código de descuento</h2>
+            <p class="text-sm text-gray-500">Configura los detalles del nuevo código</p>
+          </div>
+        </div>
+      </div>
+
+      <form id="discount-form" class="p-6 lg:p-8 space-y-6">
+        <!-- Code & Description -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <label for="code" class="form-label">Código *</label>
+            <input 
+              type="text" 
+              id="code" 
+              name="code" 
+              required 
+              class="form-input uppercase" 
+              placeholder="Ej: WELCOME10"
+              pattern="[A-Za-z0-9]+"
+              title="Solo letras y números, sin espacios"
+            />
+            <p class="text-xs text-gray-400 mt-1">Solo letras y números. Se convertirá a mayúsculas.</p>
+          </div>
+          <div>
+            <label for="description" class="form-label">Descripción</label>
+            <input 
+              type="text" 
+              id="description" 
+              name="description" 
+              class="form-input" 
+              placeholder="Ej: Descuento de bienvenida del 10%"
+            />
+          </div>
+        </div>
+
+        <!-- Discount Type & Value -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <label for="discount_type" class="form-label">Tipo de descuento *</label>
+            <select id="discount_type" name="discount_type" required class="form-input">
+              <option value="percentage">Porcentaje (%)</option>
+              <option value="fixed">Cantidad fija (€)</option>
+            </select>
+          </div>
+          <div>
+            <label for="discount_value" class="form-label">
+              Valor del descuento *
+              <span id="value-hint" class="text-gray-400 font-normal">(en %)</span>
+            </label>
+            <div class="relative">
+              <input 
+                type="number" 
+                id="discount_value" 
+                name="discount_value" 
+                required 
+                min="0" 
+                step="0.01"
+                class="form-input pr-12" 
+                placeholder="10"
+              />
+              <span id="value-suffix" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Min Purchase & Max Uses -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <label for="min_purchase" class="form-label">Compra mínima (€)</label>
+            <div class="relative">
+              <input 
+                type="number" 
+                id="min_purchase" 
+                name="min_purchase" 
+                min="0" 
+                step="0.01"
+                class="form-input pr-10" 
+                placeholder="0.00"
+                value="0"
+              />
+              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">€</span>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">Dejar en 0 para sin mínimo</p>
+          </div>
+          <div>
+            <label for="max_uses" class="form-label">Máximo de usos</label>
+            <input 
+              type="number" 
+              id="max_uses" 
+              name="max_uses" 
+              min="0" 
+              class="form-input" 
+              placeholder="Ilimitado"
+            />
+            <p class="text-xs text-gray-400 mt-1">Dejar vacío para usos ilimitados</p>
+          </div>
+        </div>
+
+        <!-- Date Range -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <label for="starts_at" class="form-label">Fecha de inicio</label>
+            <input 
+              type="datetime-local" 
+              id="starts_at" 
+              name="starts_at" 
+              class="form-input"
+            />
+            <p class="text-xs text-gray-400 mt-1">Dejar vacío para comenzar inmediatamente</p>
+          </div>
+          <div>
+            <label for="expires_at" class="form-label">Fecha de expiración</label>
+            <input 
+              type="datetime-local" 
+              id="expires_at" 
+              name="expires_at" 
+              class="form-input"
+            />
+            <p class="text-xs text-gray-400 mt-1">Dejar vacío para nunca expirar</p>
+          </div>
+        </div>
+
+        <!-- Active toggle -->
+        <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
+          <label class="toggle-switch cursor-pointer">
+            <input type="checkbox" id="is_active" name="is_active" checked class="sr-only peer" />
+            <div class="toggle-track peer-checked:bg-gradient-to-r peer-checked:from-emerald-400 peer-checked:to-teal-500">
+              <div class="toggle-thumb"></div>
+            </div>
+          </label>
+          <div>
+            <p class="font-medium text-gray-900 text-sm">Código activo</p>
+            <p class="text-xs text-gray-500">El código podrá ser utilizado por los clientes</p>
+          </div>
+        </div>
+
+        <!-- Preview Card -->
+        <div class="preview-card" id="preview-card">
+          <div class="flex items-center gap-2 mb-3">
+            <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            <span class="text-xs font-semibold text-indigo-600 uppercase tracking-wider">Vista previa</span>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md">
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
+              </svg>
+            </div>
+            <div>
+              <p class="font-mono font-bold text-lg text-gray-900 tracking-widest" id="preview-code">CÓDIGO</p>
+              <p class="text-sm text-gray-500" id="preview-desc">Descripción del descuento</p>
+              <p class="text-indigo-600 font-bold mt-1" id="preview-value">—</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error message -->
+        <div id="form-error" class="hidden p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
+        </div>
+
+        <!-- Submit -->
+        <div class="flex items-center justify-end gap-4 pt-4 border-t border-gray-100">
+          <a href="/admin/descuentos" class="px-6 py-2.5 rounded-xl border-2 border-gray-200 text-gray-600 font-medium hover:border-gray-300 hover:bg-gray-50 transition-all duration-200">
+            Cancelar
+          </a>
+          <button 
+            type="submit" 
+            id="submit-btn"
+            class="px-8 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium rounded-xl shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          >
+            Crear código
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</AdminLayout>
+
+<style>
+  .form-card {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+  }
+
+  .form-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #f3f4f6;
+    background: linear-gradient(180deg, #fafafa, #ffffff);
+  }
+
+  .form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    background: #f9fafb;
+    font-size: 0.875rem;
+    color: #1f2937;
+    transition: all 0.2s ease;
+    outline: none;
+  }
+
+  .form-input:focus {
+    border-color: #6366f1;
+    background: white;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+  }
+
+  .form-input::placeholder {
+    color: #9ca3af;
+  }
+
+  .toggle-switch .toggle-track {
+    position: relative;
+    width: 3rem;
+    height: 1.75rem;
+    background: #e5e7eb;
+    border-radius: 9999px;
+    transition: all 0.3s ease;
+  }
+
+  .toggle-switch .toggle-thumb {
+    position: absolute;
+    top: 0.2rem;
+    left: 0.2rem;
+    width: 1.35rem;
+    height: 1.35rem;
+    background: white;
+    border-radius: 9999px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+  }
+
+  .toggle-switch input:checked + .toggle-track .toggle-thumb {
+    transform: translateX(1.25rem);
+  }
+
+  .preview-card {
+    background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+    border: 1px solid #c7d2fe;
+    border-radius: 1rem;
+    padding: 1.25rem;
+    transition: all 0.3s ease;
+  }
+</style>
+
+<script>
+  const form = document.getElementById('discount-form') as HTMLFormElement;
+  const typeSelect = document.getElementById('discount_type') as HTMLSelectElement;
+  const valueInput = document.getElementById('discount_value') as HTMLInputElement;
+  const valueSuffix = document.getElementById('value-suffix');
+  const valueHint = document.getElementById('value-hint');
+  const codeInput = document.getElementById('code') as HTMLInputElement;
+  const descInput = document.getElementById('description') as HTMLInputElement;
+  const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+  const formError = document.getElementById('form-error');
+
+  // Preview elements
+  const previewCode = document.getElementById('preview-code');
+  const previewDesc = document.getElementById('preview-desc');
+  const previewValue = document.getElementById('preview-value');
+
+  // Update suffix and hint based on type
+  typeSelect?.addEventListener('change', () => {
+    const isPercentage = typeSelect.value === 'percentage';
+    if (valueSuffix) valueSuffix.textContent = isPercentage ? '%' : '€';
+    if (valueHint) valueHint.textContent = isPercentage ? '(en %)' : '(en €)';
+    updatePreview();
+  });
+
+  // Live preview
+  function updatePreview() {
+    if (previewCode) previewCode.textContent = codeInput?.value.toUpperCase() || 'CÓDIGO';
+    if (previewDesc) previewDesc.textContent = descInput?.value || 'Descripción del descuento';
+    
+    if (previewValue && valueInput) {
+      const val = parseFloat(valueInput.value);
+      if (!isNaN(val) && val > 0) {
+        if (typeSelect?.value === 'percentage') {
+          previewValue.textContent = `${val}% de descuento`;
+        } else {
+          previewValue.textContent = `-${val.toFixed(2)} €`;
+        }
+      } else {
+        previewValue.textContent = '—';
+      }
+    }
+  }
+
+  codeInput?.addEventListener('input', updatePreview);
+  descInput?.addEventListener('input', updatePreview);
+  valueInput?.addEventListener('input', updatePreview);
+
+  // Form submission
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const code = codeInput?.value.trim().toUpperCase();
+    if (!code) return;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creando...';
+    formError?.classList.add('hidden');
+
+    try {
+      const discountValue = parseFloat(valueInput.value);
+      const minPurchase = parseFloat((document.getElementById('min_purchase') as HTMLInputElement)?.value || '0');
+      const maxUses = (document.getElementById('max_uses') as HTMLInputElement)?.value;
+      const startsAt = (document.getElementById('starts_at') as HTMLInputElement)?.value;
+      const expiresAt = (document.getElementById('expires_at') as HTMLInputElement)?.value;
+      const isActive = (document.getElementById('is_active') as HTMLInputElement)?.checked;
+
+      // Validate percentage max 100
+      if (typeSelect.value === 'percentage' && discountValue > 100) {
+        throw new Error('El porcentaje no puede ser mayor a 100%');
+      }
+
+      // Build request body - convert € to cents for fixed amounts
+      const body = {
+        code,
+        description: descInput?.value || null,
+        discount_type: typeSelect.value,
+        discount_value: typeSelect.value === 'fixed' ? Math.round(discountValue * 100) : discountValue,
+        min_purchase: Math.round(minPurchase * 100),
+        max_uses: maxUses ? parseInt(maxUses) : null,
+        is_active: isActive,
+        starts_at: startsAt || null,
+        expires_at: expiresAt || null,
+      };
+
+      const response = await fetch('/api/discount', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        window.location.href = '/admin/descuentos';
+      } else {
+        throw new Error(data.error || 'Error al crear el código');
+      }
+    } catch (error: any) {
+      if (formError) {
+        formError.textContent = error.message || 'Error al crear el código de descuento';
+        formError.classList.remove('hidden');
+      }
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Crear código';
+    }
+  });
+
+  // Initial preview
+  updatePreview();
+</script>

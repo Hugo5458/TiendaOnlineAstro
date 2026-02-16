@@ -17,9 +17,16 @@ const { title, description } = Astro.props;
 const accessToken = Astro.cookies.get('sb-access-token')?.value;
 const isLoggedIn = !!accessToken;
 
-const categories = await getCategories();
 // Separar categorías principales de subcategorías
 // Identificar categorías raíz (Hombre/Mujer)
+const cleanName = (name: string) => name.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').trim();
+
+const categoriesRaw = await getCategories();
+const categories = categoriesRaw.map(c => ({
+  ...c,
+  name: cleanName(c.name)
+}));
+
 const hombreCat = categories.find(c => c.slug === 'hombre');
 const mujerCat = categories.find(c => c.slug === 'mujer');
 
@@ -149,7 +156,7 @@ const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== '
             href={`/categoria/${category.slug}`}
             class="text-xs uppercase tracking-widest font-medium hover:text-gray-600 transition-colors"
           >
-            {category.name.replace('👔 ', '').replace('👗 ', '')}
+            {category.name}
           </a>
         ))}
         <a 
@@ -205,7 +212,7 @@ const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== '
                   href={`/categoria/${category.slug}`}
                   class="block text-2xl uppercase tracking-widest font-light hover:translate-x-2 transition-transform"
                 >
-                  {category.name.replace('👔 ', '').replace('👗 ', '')}
+                  {category.name}
                 </a>
               ))}
               <a 
@@ -333,7 +340,7 @@ const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== '
             {mainCategories.map((category) => (
               <li>
                 <a href={`/categoria/${category.slug}`} class="text-xs text-gray-500 hover:text-black transition-colors uppercase tracking-wider">
-                  {category.name.replace('👔 ', '').replace('👗 ', '')}
+                  {category.name}
                 </a>
               </li>
             ))}

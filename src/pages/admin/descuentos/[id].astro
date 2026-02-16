@@ -1,0 +1,484 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { supabase, isSupabaseConfigured } from '../../../lib/supabase';
+import type { DiscountCode } from '../../../lib/supabase';
+
+export const prerender = false;
+
+const { id } = Astro.params;
+
+let discount: DiscountCode | null = null;
+
+if (isSupabaseConfigured()) {
+  const { data, error } = await supabase
+    .from('discount_codes')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (!error && data) {
+    discount = data;
+  }
+} else {
+  // Demo data
+  const demoCodes: DiscountCode[] = [
+    {
+      id: '1', code: 'WELCOME10', description: 'Descuento de bienvenida del 10%',
+      discount_type: 'percentage', discount_value: 10, min_purchase: 2000,
+      max_uses: null, current_uses: 5, is_active: true,
+      starts_at: null, expires_at: null,
+      created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z'
+    },
+    {
+      id: '2', code: 'FASHION20', description: 'Descuento del 20% en toda la tienda',
+      discount_type: 'percentage', discount_value: 20, min_purchase: 5000,
+      max_uses: 100, current_uses: 23, is_active: true,
+      starts_at: '2026-01-01T00:00:00Z', expires_at: '2026-12-31T23:59:59Z',
+      created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z'
+    },
+    {
+      id: '3', code: 'ENVIOGRATIS', description: 'Envío gratis (descuento de 5€)',
+      discount_type: 'fixed', discount_value: 500, min_purchase: 3000,
+      max_uses: 50, current_uses: 12, is_active: true,
+      starts_at: null, expires_at: null,
+      created_at: '2026-01-15T00:00:00Z', updated_at: '2026-01-15T00:00:00Z'
+    },
+    {
+      id: '4', code: 'SUPER30', description: 'Descuento VIP del 30%',
+      discount_type: 'percentage', discount_value: 30, min_purchase: 10000,
+      max_uses: 10, current_uses: 10, is_active: false,
+      starts_at: null, expires_at: '2026-01-31T23:59:59Z',
+      created_at: '2026-01-01T00:00:00Z', updated_at: '2026-02-01T00:00:00Z'
+    },
+  ];
+  discount = demoCodes.find(d => d.id === id) || null;
+}
+
+if (!discount) {
+  return Astro.redirect('/admin/descuentos');
+}
+
+// Format dates for datetime-local input
+function formatDateForInput(dateStr: string | null): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toISOString().slice(0, 16);
+}
+
+// Display value (convert cents to euros for fixed)
+const displayValue = discount.discount_type === 'fixed' 
+  ? (discount.discount_value / 100).toFixed(2) 
+  : discount.discount_value.toString();
+
+const displayMinPurchase = (discount.min_purchase / 100).toFixed(2);
+---
+
+<AdminLayout title={`Editar: ${discount.code}`}>
+  <div class="max-w-3xl mx-auto">
+    <!-- Back button -->
+    <a href="/admin/descuentos" class="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors mb-6 group">
+      <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      <span class="font-medium">Volver a descuentos</span>
+    </a>
+
+    <!-- Form Card -->
+    <div class="form-card">
+      <div class="form-header">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="p-2.5 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/30">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-lg font-bold text-gray-900">Editar código</h2>
+              <p class="text-sm text-gray-500">
+                <span class="font-mono font-bold text-indigo-600">{discount.code}</span> — 
+                Usado {discount.current_uses} veces
+              </p>
+            </div>
+          </div>
+          <span class={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold ${
+            discount.is_active 
+              ? 'bg-emerald-100 text-emerald-700' 
+              : 'bg-gray-100 text-gray-500'
+          }`}>
+            {discount.is_active ? 'Activo' : 'Inactivo'}
+          </span>
+        </div>
+      </div>
+
+      <form id="discount-form" class="p-6 lg:p-8 space-y-6">
+        <input type="hidden" id="discount-id" value={discount.id} />
+
+        <!-- Code & Description -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <label for="code" class="form-label">Código *</label>
+            <input 
+              type="text" 
+              id="code" 
+              name="code" 
+              required 
+              class="form-input uppercase" 
+              value={discount.code}
+              pattern="[A-Za-z0-9]+"
+              title="Solo letras y números, sin espacios"
+            />
+            <p class="text-xs text-gray-400 mt-1">Solo letras y números. Se convertirá a mayúsculas.</p>
+          </div>
+          <div>
+            <label for="description" class="form-label">Descripción</label>
+            <input 
+              type="text" 
+              id="description" 
+              name="description" 
+              class="form-input" 
+              value={discount.description || ''}
+              placeholder="Ej: Descuento de bienvenida del 10%"
+            />
+          </div>
+        </div>
+
+        <!-- Discount Type & Value -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <label for="discount_type" class="form-label">Tipo de descuento *</label>
+            <select id="discount_type" name="discount_type" required class="form-input">
+              <option value="percentage" selected={discount.discount_type === 'percentage'}>Porcentaje (%)</option>
+              <option value="fixed" selected={discount.discount_type === 'fixed'}>Cantidad fija (€)</option>
+            </select>
+          </div>
+          <div>
+            <label for="discount_value" class="form-label">
+              Valor del descuento *
+              <span id="value-hint" class="text-gray-400 font-normal">
+                {discount.discount_type === 'percentage' ? '(en %)' : '(en €)'}
+              </span>
+            </label>
+            <div class="relative">
+              <input 
+                type="number" 
+                id="discount_value" 
+                name="discount_value" 
+                required 
+                min="0" 
+                step="0.01"
+                class="form-input pr-12" 
+                value={displayValue}
+              />
+              <span id="value-suffix" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">
+                {discount.discount_type === 'percentage' ? '%' : '€'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Min Purchase & Max Uses -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <label for="min_purchase" class="form-label">Compra mínima (€)</label>
+            <div class="relative">
+              <input 
+                type="number" 
+                id="min_purchase" 
+                name="min_purchase" 
+                min="0" 
+                step="0.01"
+                class="form-input pr-10" 
+                value={displayMinPurchase}
+              />
+              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">€</span>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">Dejar en 0 para sin mínimo</p>
+          </div>
+          <div>
+            <label for="max_uses" class="form-label">Máximo de usos</label>
+            <input 
+              type="number" 
+              id="max_uses" 
+              name="max_uses" 
+              min="0" 
+              class="form-input" 
+              value={discount.max_uses || ''}
+              placeholder="Ilimitado"
+            />
+            <p class="text-xs text-gray-400 mt-1">
+              Dejar vacío para usos ilimitados. Usos actuales: <strong>{discount.current_uses}</strong>
+            </p>
+          </div>
+        </div>
+
+        <!-- Date Range -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <label for="starts_at" class="form-label">Fecha de inicio</label>
+            <input 
+              type="datetime-local" 
+              id="starts_at" 
+              name="starts_at" 
+              class="form-input"
+              value={formatDateForInput(discount.starts_at)}
+            />
+            <p class="text-xs text-gray-400 mt-1">Dejar vacío para sin fecha de inicio</p>
+          </div>
+          <div>
+            <label for="expires_at" class="form-label">Fecha de expiración</label>
+            <input 
+              type="datetime-local" 
+              id="expires_at" 
+              name="expires_at" 
+              class="form-input"
+              value={formatDateForInput(discount.expires_at)}
+            />
+            <p class="text-xs text-gray-400 mt-1">Dejar vacío para nunca expirar</p>
+          </div>
+        </div>
+
+        <!-- Active toggle -->
+        <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
+          <label class="toggle-switch cursor-pointer">
+            <input type="checkbox" id="is_active" name="is_active" checked={discount.is_active} class="sr-only peer" />
+            <div class="toggle-track peer-checked:bg-gradient-to-r peer-checked:from-emerald-400 peer-checked:to-teal-500">
+              <div class="toggle-thumb"></div>
+            </div>
+          </label>
+          <div>
+            <p class="font-medium text-gray-900 text-sm">Código activo</p>
+            <p class="text-xs text-gray-500">El código podrá ser utilizado por los clientes</p>
+          </div>
+        </div>
+
+        <!-- Usage stats -->
+        <div class="p-4 bg-blue-50 border border-blue-100 rounded-xl">
+          <div class="flex items-center gap-2 mb-2">
+            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="text-sm font-semibold text-blue-800">Información de uso</span>
+          </div>
+          <div class="grid grid-cols-2 gap-4 mt-3">
+            <div>
+              <p class="text-xs text-blue-600 font-medium">Usos actuales</p>
+              <p class="text-lg font-bold text-blue-900">{discount.current_uses}</p>
+            </div>
+            <div>
+              <p class="text-xs text-blue-600 font-medium">Creado</p>
+              <p class="text-sm font-semibold text-blue-900">
+                {new Date(discount.created_at).toLocaleDateString('es-ES')}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error message -->
+        <div id="form-error" class="hidden p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
+        </div>
+
+        <!-- Submit -->
+        <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+          <button 
+            type="button" 
+            id="delete-btn"
+            class="px-5 py-2.5 text-red-600 hover:text-red-700 hover:bg-red-50 font-medium rounded-xl border border-red-200 transition-all duration-200"
+          >
+            <span class="flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Eliminar
+            </span>
+          </button>
+          <div class="flex items-center gap-4">
+            <a href="/admin/descuentos" class="px-6 py-2.5 rounded-xl border-2 border-gray-200 text-gray-600 font-medium hover:border-gray-300 hover:bg-gray-50 transition-all duration-200">
+              Cancelar
+            </a>
+            <button 
+              type="submit" 
+              id="submit-btn"
+              class="px-8 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium rounded-xl shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            >
+              Guardar cambios
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</AdminLayout>
+
+<style>
+  .form-card {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+  }
+
+  .form-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #f3f4f6;
+    background: linear-gradient(180deg, #fafafa, #ffffff);
+  }
+
+  .form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    background: #f9fafb;
+    font-size: 0.875rem;
+    color: #1f2937;
+    transition: all 0.2s ease;
+    outline: none;
+  }
+
+  .form-input:focus {
+    border-color: #6366f1;
+    background: white;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+  }
+
+  .form-input::placeholder {
+    color: #9ca3af;
+  }
+
+  .toggle-switch .toggle-track {
+    position: relative;
+    width: 3rem;
+    height: 1.75rem;
+    background: #e5e7eb;
+    border-radius: 9999px;
+    transition: all 0.3s ease;
+  }
+
+  .toggle-switch .toggle-thumb {
+    position: absolute;
+    top: 0.2rem;
+    left: 0.2rem;
+    width: 1.35rem;
+    height: 1.35rem;
+    background: white;
+    border-radius: 9999px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+  }
+
+  .toggle-switch input:checked + .toggle-track .toggle-thumb {
+    transform: translateX(1.25rem);
+  }
+</style>
+
+<script>
+  const form = document.getElementById('discount-form') as HTMLFormElement;
+  const discountId = (document.getElementById('discount-id') as HTMLInputElement)?.value;
+  const typeSelect = document.getElementById('discount_type') as HTMLSelectElement;
+  const valueInput = document.getElementById('discount_value') as HTMLInputElement;
+  const valueSuffix = document.getElementById('value-suffix');
+  const valueHint = document.getElementById('value-hint');
+  const codeInput = document.getElementById('code') as HTMLInputElement;
+  const descInput = document.getElementById('description') as HTMLInputElement;
+  const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+  const deleteBtn = document.getElementById('delete-btn') as HTMLButtonElement;
+  const formError = document.getElementById('form-error');
+
+  // Update suffix based on type
+  typeSelect?.addEventListener('change', () => {
+    const isPercentage = typeSelect.value === 'percentage';
+    if (valueSuffix) valueSuffix.textContent = isPercentage ? '%' : '€';
+    if (valueHint) valueHint.textContent = isPercentage ? '(en %)' : '(en €)';
+  });
+
+  // Form submission
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const code = codeInput?.value.trim().toUpperCase();
+    if (!code) return;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Guardando...';
+    formError?.classList.add('hidden');
+
+    try {
+      const discountValue = parseFloat(valueInput.value);
+      const minPurchase = parseFloat((document.getElementById('min_purchase') as HTMLInputElement)?.value || '0');
+      const maxUses = (document.getElementById('max_uses') as HTMLInputElement)?.value;
+      const startsAt = (document.getElementById('starts_at') as HTMLInputElement)?.value;
+      const expiresAt = (document.getElementById('expires_at') as HTMLInputElement)?.value;
+      const isActive = (document.getElementById('is_active') as HTMLInputElement)?.checked;
+
+      if (typeSelect.value === 'percentage' && discountValue > 100) {
+        throw new Error('El porcentaje no puede ser mayor a 100%');
+      }
+
+      const body = {
+        code,
+        description: descInput?.value || null,
+        discount_type: typeSelect.value,
+        discount_value: typeSelect.value === 'fixed' ? Math.round(discountValue * 100) : discountValue,
+        min_purchase: Math.round(minPurchase * 100),
+        max_uses: maxUses ? parseInt(maxUses) : null,
+        is_active: isActive,
+        starts_at: startsAt || null,
+        expires_at: expiresAt || null,
+      };
+
+      const response = await fetch(`/api/discount/${discountId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        window.location.href = '/admin/descuentos';
+      } else {
+        throw new Error(data.error || 'Error al actualizar el código');
+      }
+    } catch (error: any) {
+      if (formError) {
+        formError.textContent = error.message || 'Error al actualizar el código de descuento';
+        formError.classList.remove('hidden');
+      }
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Guardar cambios';
+    }
+  });
+
+  // Delete handler
+  deleteBtn?.addEventListener('click', async () => {
+    const code = codeInput?.value;
+    if (!confirm(`¿Estás seguro de que quieres eliminar el código "${code}"? Esta acción no se puede deshacer.`)) return;
+
+    try {
+      const response = await fetch(`/api/discount/${discountId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        window.location.href = '/admin/descuentos';
+      } else {
+        const data = await response.json().catch(() => null);
+        alert(data?.error || 'Error al eliminar el código');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al eliminar el código');
+    }
+  });
+</script>

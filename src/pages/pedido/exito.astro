@@ -81,7 +81,7 @@ try {
         // In a real scenario, this should come from session.total_details.amount_discount
         const discountAmount = session.total_details?.amount_discount || 0;
 
-        const shipping = session.shipping_details?.address;
+        const shipping = (session as any).shipping_details?.address;
         const shippingAddress = {
             line1: shipping?.line1,
             line2: shipping?.line2,
@@ -91,7 +91,7 @@ try {
             country: shipping?.country,
         };
 
-        let insertedOrderId = null;
+        let insertedOrderId: string | null = null;
 
         try {
             // First attempt: Try using the RPC function

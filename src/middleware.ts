@@ -1,6 +1,8 @@
 import { defineMiddleware } from 'astro:middleware';
 import { supabase } from './lib/supabase';
 
+const ADMIN_EMAILS = ['hugodelmoral77@gmail.com', 'admin@fashionstore.com'];
+
 export const onRequest = defineMiddleware(async (context, next) => {
     const { pathname } = context.url;
 
@@ -12,11 +14,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
         if (!accessToken || !refreshToken) {
             // No tokens, redirect to login
-            return context.redirect('/admin/login');
+            return context.redirect('/login');
         }
 
         // Verify session with Supabase
-        const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+        let { data: { user }, error } = await supabase.auth.getUser(accessToken);
 
         if (error || !user) {
             // Invalid session, try to refresh
@@ -28,7 +30,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
                 // Clear invalid cookies and redirect
                 context.cookies.delete('sb-access-token', { path: '/' });
                 context.cookies.delete('sb-refresh-token', { path: '/' });
-                return context.redirect('/admin/login');
+                return context.redirect('/login');
             }
 
             // Update cookies with new tokens
@@ -46,6 +48,15 @@ export const onRequest = defineMiddleware(async (context, next) => {
                 sameSite: 'lax',
                 maxAge: 60 * 60 * 24 * 7 // 7 days
             });
+
+            // Use the refreshed user
+            user = refreshData.session.user;
+        }
+
+        // Check if user is admin by email
+        if (!user?.email || !ADMIN_EMAILS.includes(user.email)) {
+            // User is logged in but NOT an admin - redirect to home
+            return context.redirect('/cuenta');
         }
     }
 

@@ -16,98 +16,116 @@ export const prerender = false;
 </BaseLayout>
 
 <script>
-  import { createClient } from '@supabase/supabase-js';
+  import { supabase } from '../../lib/supabase';
 
-  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-  const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
-  const supabase = createClient(supabaseUrl, supabaseKey, {
-    auth: {
-      flowType: 'pkce',
-    },
-  });
+  // Timeout de seguridad global: si en 8 segundos no pasa nada, redirigir al login
+  const safetyTimeout = setTimeout(() => {
+     console.warn('Safety timeout triggered');
+     const errElem = document.getElementById('error-msg');
+     if (errElem) {
+         errElem.textContent = 'La autenticación está tardando demasiado. Redirigiendo...';
+         errElem.classList.remove('hidden');
+     }
+     setTimeout(() => window.location.replace('/login'), 2000);
+  }, 8000); // 8 segundos
 
-  // Manejar Auth en el cliente
-  async function handleClientAuth() {
-    try {
-        // 1. Limpieza selectiva: Borrar sesiones antiguas pero MANTENER el verifier de PKCE
-        localStorage.removeItem('fashionstore-user'); 
+  async function handleAuth() {
+    console.log('--- Auth Callback Started ---');
+    
+    // 1. Verificar si YA tenemos sesión (Supabase auto-detect)
+    const { data: { session: initialSession } } = await supabase.auth.getSession();
+    
+    if (initialSession) {
+        console.log('Sesión detectada al inicio.');
+        await setCookiesAndRedirect(initialSession);
+        return;
+    }
 
-        for (let i = localStorage.length - 1; i >= 0; i--) {
-            const key = localStorage.key(i);
-            // Borramos todo lo de supabase EXCEPTO el code-verifier
-            // Esto asegura que no recuperamos sesiones viejas por error
-            if (key && key.startsWith('sb-') && !key.includes('code-verifier')) {
-                localStorage.removeItem(key);
-            }
+    // 2. Si no, esperar a onAuthStateChange (crucial para PKCE flow auto-detect)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log(`Auth Event: ${event}`);
+        if (event === 'SIGNED_IN' && session) {
+            console.log('Evento SIGNED_IN recibido.');
+            subscription.unsubscribe();
+            await setCookiesAndRedirect(session);
         }
+    });
 
-        // 2. Detectar si hay CODE (PKCE Flow)
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
-        const errorParam = urlParams.get('error');
-        const errorDesc = urlParams.get('error_description');
+    // 3. Fallback: Si hay código y no ha pasado nada en 2 segundos, intentar manual
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const errorParam = urlParams.get('error');
+    
+    if (errorParam) {
+        reportError('Error recibido en URL: ' + (urlParams.get('error_description') || errorParam));
+        return;
+    }
 
-        if (errorParam) {
-            throw new Error(errorDesc || errorParam);
-        }
+    if (code) {
+        setTimeout(async () => {
+            // Verificar de nuevo antes de intentar manual
+            const { data: { session: checkSession } } = await supabase.auth.getSession();
+            if (checkSession) return; // Ya se encargó el listener
 
-        if (code) {
-            // Intentar intercambio de código en el cliente (que tiene el verifier)
+            console.log('Intentando intercambio manual de código (fallback)...');
             const { data, error } = await supabase.auth.exchangeCodeForSession(code);
             
-            if (!error && data?.session) {
-                 // Éxito: Guardar cookies y redirigir
-                 await setCookiesAndRedirect(data.session);
-                 return;
+            if (error) {
+                console.warn('Intercambio manual falló (probablemente ya usado):', error.message);
+                // Si falla, verificamos una última vez si tenemos sesión
+                const { data: { session: finalCheck } } = await supabase.auth.getSession();
+                if (finalCheck) {
+                    await setCookiesAndRedirect(finalCheck);
+                } else {
+                    // Si es un error real y no tenemos sesión, reportar
+                    if (!error.message.includes('PKCE')) { // Ignorar errores de PKCE duplicados
+                        reportError('Error de autenticación: ' + error.message);
+                    }
+                }
+            } else if (data?.session) {
+                await setCookiesAndRedirect(data.session);
             }
-            // Si hay error, seguimos al fallback por si acaso
-            if (error) console.error('Error PKCE:', error);
-        }
-
-        // 3. Fallback: Implicit Flow (Hash) o sesión ya activa
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) throw error;
-
-        if (session) {
-            await setCookiesAndRedirect(session);
-        } else {
-           // Si no hay sesión ni código, redirigir al login tras timeout
-           setTimeout(() => {
-              if (!window.location.hash && !code) {
-                 window.location.href = '/login';
-              }
-           }, 2000);
-        }
-        
-        // Listener por si entra por hash más tarde
-        supabase.auth.onAuthStateChange(async (_, session) => {
-          if (session) {
-            await setCookiesAndRedirect(session);
-          }
-        });
-
-    } catch (e) {
-        console.error(e);
-        const errElem = document.getElementById('error-msg');
-        if (errElem) {
-            errElem.textContent = 'Error de autenticación: ' + e.message;
-            errElem.classList.remove('hidden');
-        }
-        // Redirigir al login tras error visible
-        setTimeout(() => window.location.href = '/login', 3000);
+        }, 2000);
+    } else {
+        // No hay código ni sesión
+        setTimeout(() => {
+             // Redirigir si no hay nada pendiente
+             window.location.replace('/login');
+        }, 3000);
     }
   }
 
+  function reportError(msg: string) {
+      clearTimeout(safetyTimeout);
+      const errElem = document.getElementById('error-msg');
+      if (errElem) {
+          errElem.textContent = msg;
+          errElem.classList.remove('hidden');
+      }
+      setTimeout(() => window.location.replace('/login'), 4000);
+  }
+
   async function setCookiesAndRedirect(session: any) {
+      clearTimeout(safetyTimeout); // Cancelar timeout de seguridad
+      
+      console.log('Guardando sesión y redirigiendo...');
       document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
       document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+
+      // Store user info in localStorage for client-side usage (e.g. headers, admin panel check)
+      if (session.user) {
+         localStorage.setItem('fashionstore-user', JSON.stringify({
+            username: session.user.user_metadata?.username || session.user.email?.split('@')[0],
+            email: session.user.email,
+            loggedInAt: new Date().toISOString()
+         }));
+      }
 
       const ADMIN_EMAILS = ['hugodelmoral77@gmail.com', 'admin@fashionstore.com'];
       const isAdmin = !!session?.user?.email && ADMIN_EMAILS.includes(session.user.email);
       
+      // Intento de obtener perfil, si falla no bloqueamos el login
       try {
-        // Verificar si el perfil está completo
         const { data: profile } = await supabase
             .from('profiles')
             .select('phone, address')
@@ -115,15 +133,15 @@ export const prerender = false;
             .single();
 
         if (!profile || !profile.phone || !profile.address) {
-            window.location.href = '/completar-perfil';
+            window.location.replace('/completar-perfil');
         } else {
-            window.location.href = isAdmin ? '/admin' : '/cuenta';
+            window.location.replace(isAdmin ? '/admin' : '/cuenta');
         }
       } catch (e) {
-          // Si falla la comprobación, ir a cuenta por defecto
-          window.location.href = isAdmin ? '/admin' : '/cuenta';
+          console.warn('Error fetching profile, redirecting to account anyway', e);
+          window.location.replace(isAdmin ? '/admin' : '/cuenta');
       }
   }
 
-  handleClientAuth();
+  handleAuth();
 </script>

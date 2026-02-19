@@ -285,10 +285,48 @@ export const prerender = false; // SSR for cart
     }
     
     if (subtotalEl) subtotalEl.textContent = formatPrice(subtotal);
+
+    // Shipping Logic
+    const shippingEl = document.getElementById('summary-shipping');
+    const SHIPPING_COST = 499; // 4.99 EUR
+    const FREE_SHIPPING_THRESHOLD = 5000; // 50.00 EUR
     
-    // Update total with discount
+    const shippingCost = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
+    
+    if (shippingEl) {
+        if (shippingCost === 0) {
+            shippingEl.innerHTML = `
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                Gratis
+            `;
+            shippingEl.className = 'font-semibold text-success-600 flex items-center gap-1';
+        } else {
+            shippingEl.textContent = formatPrice(shippingCost);
+            shippingEl.className = 'font-semibold text-primary-900';
+        }
+    }
+    
+    // Recalculate discount if applied (to ensure it's up to date with new subtotal)
+    if (appliedDiscount) {
+      if (appliedDiscount.discount_type === 'percentage') {
+        appliedDiscount.discount_amount = Math.floor((subtotal * appliedDiscount.discount_value) / 100);
+      }
+      // For fixed, amount stays the same but cap at subtotal
+      appliedDiscount.discount_amount = Math.min(appliedDiscount.discount_amount, subtotal);
+      
+      // Update display inside the discount box if visible
+      if (discountAmountDisplay) {
+         discountAmountDisplay.textContent = formatPrice(appliedDiscount.discount_amount);
+      }
+    }
+
+    // Update total with discount and shipping (Max(0, Subtotal - Discount) + Shipping)
     const currentDiscount = appliedDiscount;
-    const finalTotal = currentDiscount ? Math.max(0, subtotal - currentDiscount.discount_amount) : subtotal;
+    const discountedSubtotal = currentDiscount ? Math.max(0, subtotal - currentDiscount.discount_amount) : subtotal;
+    const finalTotal = discountedSubtotal + shippingCost;
+
     if (totalEl) totalEl.textContent = formatPrice(finalTotal);
   }
   

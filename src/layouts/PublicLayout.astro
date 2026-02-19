@@ -123,8 +123,8 @@ const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== '
               </div>
               <!-- Logged In Menu (hidden by default) -->
               <div id="logged-in-menu" class="hidden py-2">
-                <!-- Admin Link -->
-                <a id="admin-link" href="/admin" class="hidden block px-6 py-3 text-xs text-accent-500 font-bold hover:bg-gray-50 transition-colors uppercase tracking-widest">
+                <!-- Admin Link (hidden by default, only shown to admin users via JS) -->
+                <a id="admin-link" href="/admin" style="display:none" class="block px-6 py-3 text-xs text-accent-500 font-bold hover:bg-gray-50 transition-colors uppercase tracking-widest">
                   Panel Admin
                 </a>
                 <a href="/cuenta" class="block px-6 py-3 text-xs uppercase tracking-widest hover:bg-gray-50 transition-colors">
@@ -289,6 +289,9 @@ const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== '
           
           const ADMIN_EMAILS = ['hugodelmoral77@gmail.com', 'admin@fashionstore.com'];
 
+          // Always hide admin link first for safety
+          if (adminLink) adminLink.style.display = 'none';
+
           if (isUserLoggedIn) {
             let user = {};
             if (localStorageUser) {
@@ -298,13 +301,14 @@ const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== '
             if (guestMenu) guestMenu.classList.add('hidden');
             if (loggedInMenu) loggedInMenu.classList.remove('hidden');
             
+            // Only show admin link if user email is in the admin list
             if (adminLink && user.email && ADMIN_EMAILS.includes(user.email)) {
-              adminLink.classList.remove('hidden');
+              adminLink.style.display = 'block';
             }
           } else {
+            // Not logged in: show guest menu, hide logged-in menu
             if (guestMenu) guestMenu.classList.remove('hidden');
             if (loggedInMenu) loggedInMenu.classList.add('hidden');
-            if (adminLink) adminLink.classList.add('hidden');
           }
         } catch (e) {
           console.error('Auth check error:', e);
@@ -327,9 +331,9 @@ const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== '
           <h3 class="text-xs uppercase tracking-widest font-bold mb-6">Ayuda</h3>
           <ul class="space-y-3">
             <li><a href="/contacto" class="text-xs text-gray-500 hover:text-black transition-colors uppercase tracking-wider">Atención al cliente</a></li>
-            <li><a href="/envios" class="text-xs text-gray-500 hover:text-black transition-colors uppercase tracking-wider">Envíos</a></li>
-            <li><a href="/devoluciones" class="text-xs text-gray-500 hover:text-black transition-colors uppercase tracking-wider">Devoluciones</a></li>
-            <li><a href="/tallas" class="text-xs text-gray-500 hover:text-black transition-colors uppercase tracking-wider">Guía de tallas</a></li>
+            <li><a href="/ayuda#envios" class="text-xs text-gray-500 hover:text-black transition-colors uppercase tracking-wider">Envíos</a></li>
+            <li><a href="/ayuda#devoluciones" class="text-xs text-gray-500 hover:text-black transition-colors uppercase tracking-wider">Devoluciones</a></li>
+            <li><a href="/ayuda#tallas" class="text-xs text-gray-500 hover:text-black transition-colors uppercase tracking-wider">Guía de tallas</a></li>
           </ul>
         </div>
         

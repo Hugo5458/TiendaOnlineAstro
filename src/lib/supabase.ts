@@ -4,7 +4,14 @@ const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || 'https://placeholder.
 const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
 
 // Client for browser/public operations
-export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+        flowType: 'pkce',
+        detectSessionInUrl: true,
+        autoRefreshToken: true,
+        persistSession: true
+    }
+});
 
 // Check if Supabase is configured
 export function isSupabaseConfigured(): boolean {

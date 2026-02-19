@@ -1,0 +1,53 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+---
+
+<PublicLayout title="Contacto | FashionStore">
+  <div class="bg-gray-50 py-16 md:py-24 border-b border-gray-100">
+    <div class="max-w-screen-xl mx-auto px-4 text-center">
+      <span class="text-xs uppercase tracking-widest text-gray-400 mb-3 block">Estamos aquí para ayudarte</span>
+      <h1 class="text-3xl md:text-5xl uppercase tracking-widest font-light mb-6">Contáctanos</h1>
+      <p class="max-w-xl mx-auto text-gray-500 text-sm md:text-base">
+        ¿Tienes alguna duda sobre tu pedido o nuestros productos? Rellena el siguiente formulario y te responderemos lo antes posible.
+      </p>
+    </div>
+  </div>
+
+  <div class="py-16 bg-white">
+    <div class="max-w-screen-md mx-auto px-4">
+      <form class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label for="nombre" class="block text-xs uppercase tracking-widest text-gray-500 mb-2">Nombre</label>
+            <input type="text" id="nombre" name="nombre" class="w-full px-4 py-3 border border-gray-200 text-sm focus:border-black focus:outline-none transition-colors" required />
+          </div>
+          <div>
+            <label for="email" class="block text-xs uppercase tracking-widest text-gray-500 mb-2">Email</label>
+            <input type="email" id="email" name="email" class="w-full px-4 py-3 border border-gray-200 text-sm focus:border-black focus:outline-none transition-colors" required />
+          </div>
+        </div>
+
+        <div>
+          <label for="asunto" class="block text-xs uppercase tracking-widest text-gray-500 mb-2">Asunto</label>
+          <select id="asunto" name="asunto" class="w-full px-4 py-3 border border-gray-200 text-sm focus:border-black focus:outline-none transition-colors bg-white">
+            <option>Estado de mi pedido</option>
+            <option>Devoluciones y Reembolsos</option>
+            <option>Información de producto</option>
+            <option>Otros</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="mensaje" class="block text-xs uppercase tracking-widest text-gray-500 mb-2">Mensaje</label>
+          <textarea id="mensaje" name="mensaje" rows="6" class="w-full px-4 py-3 border border-gray-200 text-sm focus:border-black focus:outline-none transition-colors" required></textarea>
+        </div>
+
+        <div class="text-center pt-4">
+          <button type="submit" class="w-full md:w-auto px-12 py-4 bg-black text-white text-xs uppercase tracking-widest hover:bg-gray-800 transition-colors">
+            Enviar Mensaje
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</PublicLayout>

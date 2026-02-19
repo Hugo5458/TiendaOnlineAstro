@@ -1,0 +1,205 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+
+const helpCategories = [
+  {
+    icon: `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>`,
+    title: "Pedidos y Pagos",
+    description: "Estado de tu pedido, métodos de pago, facturas.",
+    link: "#pedidos"
+  },
+  {
+    icon: `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>`,
+    title: "Envíos y Entregas",
+    description: "Plazos de entrega, costes de envío, seguimiento.",
+    link: "#envios"
+  },
+  {
+    icon: `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 15v-1a4 4 0 00-4-4H8m0 0l3 3m-3-3l3-3m9 14V5a2 2 0 00-2-2H6a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2z"/></svg>`,
+    title: "Devoluciones",
+    description: "Política de devoluciones, cómo devolver un artículo.",
+    link: "#devoluciones"
+  },
+  {
+    icon: `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>`,
+    title: "Mi Cuenta",
+    description: "Gestionar perfil, direcciones, newsletter.",
+    link: "#cuenta"
+  },
+  {
+    icon: `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>`,
+    title: "Guía de Tallas",
+    description: "Encuentra tu talla perfecta, medidas y consejos.",
+    link: "#tallas"
+  },
+  {
+    icon: `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8.25 21v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21m0 0h4.5V3.545M12.75 21h7.5V10.75M2.25 21h1.5m18 0h-18M2.25 9l4.5-1.636M18.75 3l-1.5.545m0 6.205l3 1m1.5.5l-1.5-.5M6.75 7.364V3h-3v18m3-13.636l10.5-3.819"/></svg>`,
+    title: "Tiendas",
+    description: "Localizador de tiendas, horarios, servicios.",
+    link: "#tiendas"
+  }
+];
+
+const faqs = [
+  {
+    id: "envios",
+    category: "Envíos",
+    items: [
+      { q: "¿Cuánto tarda en llegar mi pedido?", a: "Los pedidos estándar tardan entre 3-5 días laborables. El envío express llega en 24-48 horas." },
+      { q: "¿Cuánto cuesta el envío?", a: "El envío estándar es gratuito para pedidos superiores a 50€. Para pedidos inferiores, el coste es de 3.95€. El envío express tiene un coste de 9.95€." },
+      { q: "¿Hacéis envíos internacionales?", a: "Sí, realizamos envíos a toda la Unión Europea. Los costes y tiempos pueden variar según el destino." }
+    ]
+  },
+  {
+    id: "devoluciones",
+    category: "Devoluciones",
+    items: [
+      { q: "¿Cuál es el plazo para devolver un artículo?", a: "Dispones de 30 días naturales desde la fecha de recepción de tu pedido para realizar una devolución." },
+      { q: "¿Cómo hago una devolución?", a: "Puedes solicitar una devolución desde tu cuenta en la sección 'Mis Pedidos'. Te enviaremos una etiqueta para que puedas dejar el paquete en un punto de recogida." },
+      { q: "¿La devolución es gratuita?", a: "Sí, la primera devolución de cada pedido es totalmente gratuita." }
+    ]
+  },
+  {
+    id: "pedidos",
+    category: "Pedidos y Pagos",
+    items: [
+      { q: "¿Cómo puedo saber el estado de mi pedido?", a: "Puedes ver el estado de tu pedido en la sección 'Mis Pedidos' de tu cuenta." },
+      { q: "¿Qué métodos de pago aceptáis?", a: "Aceptamos tarjeta de crédito/débito, PayPal y pago contra reembolso." },
+      { q: "¿Cómo obtengo mi factura?", a: "La factura se envía automáticamente a tu email una vez enviado el pedido. También puedes descargarla desde tu cuenta." }
+    ]
+  },
+  {
+    id: "tallas",
+    category: "Guía de Tallas",
+    items: [
+      { q: "¿Cómo sé cuál es mi talla?", a: "En cada página de producto encontrarás un enlace a nuestra 'Guía de Tallas' con las medidas exactas." },
+      { q: "¿Las tallas son estándar?", a: "Sí, nuestras tallas corresponden al tallaje europeo estándar. Si tienes dudas, te recomendamos consultar la guía." }
+    ]
+  },
+  {
+    id: "cuenta",
+    category: "Cuenta",
+    items: [
+      { q: "¿Necesito una cuenta para comprar?", a: "No, puedes comprar como invitado, pero crear una cuenta te permite guardar direcciones y ver tu historial." },
+      { q: "¿Cómo cambio mi contraseña?", a: "Puedes cambiar tu contraseña desde la sección 'Mi Cuenta' > 'Seguridad'." }
+    ]
+  },
+  {
+    id: "tiendas",
+    category: "Tiendas",
+    items: [
+      { q: "¿Dónde están vuestras tiendas físicas?", a: "Actualmente operamos principalmente online, pero tenemos puntos de recogida en Madrid y Barcelona." },
+      { q: "¿Cuál es el horario de atención?", a: "Nuestro servicio de atención al cliente está disponible de Lunes a Viernes de 9:00 a 18:00." }
+    ]
+  }
+];
+---
+
+<PublicLayout title="Ayuda | FashionStore">
+  <!-- Hero Section -->
+  <div class="bg-gray-50 py-16 md:py-24 border-b border-gray-100">
+    <div class="max-w-screen-xl mx-auto px-4 text-center">
+      <span class="text-xs uppercase tracking-widest text-gray-400 mb-3 block">Soporte al cliente</span>
+      <h1 class="text-3xl md:text-5xl uppercase tracking-widest font-light mb-6">¿En qué podemos ayudarte?</h1>
+      
+      <!-- Search Input -->
+      <div class="max-w-2xl mx-auto relative group">
+        <input 
+          type="text" 
+          placeholder="Buscar un tema (ej. devoluciones, envíos...)" 
+          class="w-full px-6 py-4 pl-12 bg-white border border-gray-200 text-sm focus:border-black focus:outline-none transition-all shadow-sm group-hover:shadow-md"
+        />
+        <svg class="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Help Categories Grid -->
+  <div class="py-16 bg-white">
+    <div class="max-w-screen-xl mx-auto px-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {helpCategories.map((cat) => (
+          <a href={cat.link} class="group p-8 border border-gray-100 bg-white hover:border-black hover:shadow-lg transition-all duration-300">
+            <div class="text-gray-400 group-hover:text-black transition-colors mb-6" set:html={cat.icon} />
+            <h3 class="text-lg uppercase tracking-widest font-medium mb-3">{cat.title}</h3>
+            <p class="text-gray-500 text-sm leading-relaxed">{cat.description}</p>
+          </a>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  <!-- FAQ Section -->
+  <div class="py-16 bg-gray-50 border-t border-gray-100">
+    <div class="max-w-screen-lg mx-auto px-4">
+      <div class="text-center mb-12">
+        <h2 class="text-2xl uppercase tracking-widest font-light mb-4">Preguntas Frecuentes</h2>
+      </div>
+
+      <div class="space-y-8">
+        {faqs.map((category) => (
+          <div id={category.id} class="bg-white border border-gray-100 p-6 md:p-8 scroll-mt-32">
+            <h3 class="text-sm uppercase tracking-widest font-bold mb-6 text-gray-900 border-b border-gray-100 pb-4">{category.category}</h3>
+            <div class="divide-y divide-gray-100">
+              {category.items.map((item) => (
+                <details class="group py-4 cursor-pointer">
+                  <summary class="flex justify-between items-center text-sm font-medium text-gray-700 group-hover:text-black list-none outline-none">
+                    <span>{item.q}</span>
+                    <span class="transform group-open:rotate-180 transition-transform duration-200">
+                      <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"/></svg>
+                    </span>
+                  </summary>
+                  <p class="mt-4 text-sm text-gray-500 leading-relaxed pl-4 border-l-2 border-gray-100 animate-fade-in">
+                    {item.a}
+                  </p>
+                </details>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div class="text-center mt-12">
+        <a href="/faq" class="inline-block border-b border-black pb-1 text-xs uppercase tracking-widest hover:text-gray-600 transition-colors">Ver todas las preguntas</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contact Section -->
+  <div class="py-16 md:py-24 bg-white">
+    <div class="max-w-screen-xl mx-auto px-4">
+      <div class="bg-black text-white p-8 md:p-16 text-center">
+        <h2 class="text-2xl md:text-3xl uppercase tracking-widest font-light mb-6">¿Necesitas más ayuda?</h2>
+        <p class="text-gray-400 mb-8 max-w-lg mx-auto text-sm leading-relaxed">Nuestro equipo de atención al cliente está disponible de lunes a viernes de 9:00 a 18:00h.</p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a href="/contacto" class="px-8 py-4 bg-white text-black text-xs uppercase tracking-widest hover:bg-gray-200 transition-colors font-medium">
+            Contactar ahora
+          </a>
+          <a href="tel:+34900123456" class="px-8 py-4 border border-white text-white text-xs uppercase tracking-widest hover:bg-white/10 transition-colors font-medium">
+            Llamar: 900 123 456
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</PublicLayout>
+
+<style>
+  /* Custom animation for details */
+  details > summary {
+    list-style: none;
+  }
+  details > summary::-webkit-details-marker {
+    display: none;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+</style>

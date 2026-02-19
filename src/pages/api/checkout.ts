@@ -30,13 +30,21 @@ export const POST: APIRoute = async ({ request, redirect }) => {
             quantity: item.quantity,
         }));
 
+        // Calculate subtotal for logic
+        const subtotal = items.reduce((acc: number, item: any) => acc + (item.price * item.quantity), 0);
+
+        // Shipping Logic: 4.99€ if < 50€, else Free
+        const SHIPPING_COST = 499;
+        const FREE_SHIPPING_THRESHOLD = 5000;
+        const shippingCost = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
+
         // Handle Discount
         let discounts = [];
         if (discountCode) {
             // 1. Validate against our DB
             const { data: discountData, error } = await supabase.rpc('validate_discount_code', {
                 p_code: discountCode,
-                p_subtotal: items.reduce((acc: number, item: any) => acc + (item.price * item.quantity), 0)
+                p_subtotal: subtotal
             });
 
             if (!error && discountData && discountData.valid) {
@@ -87,6 +95,28 @@ export const POST: APIRoute = async ({ request, redirect }) => {
             shipping_address_collection: {
                 allowed_countries: ['ES'],
             },
+            shipping_options: [
+                {
+                    shipping_rate_data: {
+                        type: 'fixed_amount',
+                        fixed_amount: {
+                            amount: shippingCost,
+                            currency: 'eur',
+                        },
+                        display_name: shippingCost === 0 ? 'Envío Gratis' : 'Envío Estándar',
+                        delivery_estimate: {
+                            minimum: {
+                                unit: 'business_day',
+                                value: 3,
+                            },
+                            maximum: {
+                                unit: 'business_day',
+                                value: 5,
+                            },
+                        },
+                    },
+                },
+            ],
             phone_number_collection: {
                 enabled: true,
             },

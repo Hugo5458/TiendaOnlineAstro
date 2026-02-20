@@ -127,8 +127,8 @@ export interface DiscountCode {
 // Demo data for when Supabase is not configured
 export const demoCategories: Category[] = [
     // Categorías principales
-    { id: '1', name: '👔 Hombre', slug: 'hombre', description: 'Moda masculina elegante y sofisticada', image_url: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800', created_at: '', updated_at: '', parent_id: null },
-    { id: '2', name: '👗 Mujer', slug: 'mujer', description: 'Moda femenina exclusiva y trendy', image_url: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800', created_at: '', updated_at: '', parent_id: null },
+    { id: '1', name: 'Hombre', slug: 'hombre', description: 'Moda masculina elegante y sofisticada', image_url: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800', created_at: '', updated_at: '', parent_id: null },
+    { id: '2', name: 'Mujer', slug: 'mujer', description: 'Moda femenina exclusiva y trendy', image_url: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800', created_at: '', updated_at: '', parent_id: null },
     // Subcategorías Hombre
     { id: '3', name: 'Camisas Hombre', slug: 'camisas-hombre', description: 'Camisas elegantes para él', image_url: null, created_at: '', updated_at: '', parent_id: '1' },
     { id: '4', name: 'Pantalones Hombre', slug: 'pantalones-hombre', description: 'Pantalones de vestir y casual', image_url: null, created_at: '', updated_at: '', parent_id: '1' },
@@ -149,7 +149,7 @@ export const demoProducts: Product[] = [
         description: 'Camisa Oxford clásica confeccionada en algodón egipcio 100%. Corte slim fit con cuello button-down, perfecta para ocasiones formales o casual elegante. Botones de nácar genuino.',
         price: 5900, compare_at_price: 7900, stock: 25, category_id: '3',
         category: demoCategories[2],
-        images: ['https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800'],
+        images: ['https://images.unsplash.com/photo-1598033129183-c4f50c736c10?w=800'],
         sizes: ['XS', 'S', 'M', 'L', 'XL'], colors: ['Azul', 'Blanco'],
         is_featured: true, is_flash_offer: false, is_active: true,
         created_at: '', updated_at: ''
@@ -169,7 +169,7 @@ export const demoProducts: Product[] = [
         description: 'Pantalón chino de corte slim en algodón stretch premium. Versatilidad absoluta para cualquier ocasión. Acabado suave al tacto.',
         price: 6900, compare_at_price: null, stock: 30, category_id: '4',
         category: demoCategories[3],
-        images: ['https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=800'],
+        images: ['https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=800'],
         sizes: ['28', '30', '32', '34', '36'], colors: ['Beige', 'Navy', 'Negro'],
         is_featured: true, is_flash_offer: false, is_active: true,
         created_at: '', updated_at: ''
@@ -179,7 +179,7 @@ export const demoProducts: Product[] = [
         description: 'Traje completo en lana italiana Super 120s. Corte moderno con solapas estrechas. Incluye pantalón a juego. La elección perfecta para eventos importantes.',
         price: 29900, compare_at_price: 39900, stock: 8, category_id: '5',
         category: demoCategories[4],
-        images: ['https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800'],
+        images: ['https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?w=800'],
         sizes: ['46', '48', '50', '52', '54'], colors: ['Azul Marino'],
         is_featured: true, is_flash_offer: false, is_active: true,
         created_at: '', updated_at: ''
@@ -189,7 +189,7 @@ export const demoProducts: Product[] = [
         description: 'Zapatos Derby artesanales en cuero de becerro pulido. Suela de cuero cosida Goodyear. Un clásico atemporal para el hombre distinguido.',
         price: 15900, compare_at_price: 19900, stock: 12, category_id: '6',
         category: demoCategories[5],
-        images: ['https://images.unsplash.com/photo-1614252369475-531eba835eb1?w=800'],
+        images: ['https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?w=800'],
         sizes: ['39', '40', '41', '42', '43', '44'], colors: ['Marrón', 'Negro'],
         is_featured: true, is_flash_offer: true, is_active: true,
         created_at: '', updated_at: ''
@@ -209,7 +209,7 @@ export const demoProducts: Product[] = [
         description: 'Blazer desestructurado en mezcla de lana y algodón. Interior forrado a medias para mayor comodidad. Perfecto para smart casual.',
         price: 18900, compare_at_price: null, stock: 10, category_id: '5',
         category: demoCategories[4],
-        images: ['https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800'],
+        images: ['https://images.unsplash.com/photo-1592878904946-b3cd8ae243d0?w=800'],
         sizes: ['46', '48', '50', '52'], colors: ['Gris', 'Azul'],
         is_featured: true, is_flash_offer: false, is_active: true,
         created_at: '', updated_at: ''
@@ -219,7 +219,7 @@ export const demoProducts: Product[] = [
         description: 'Sneakers minimalistas en cuero italiano premium. Suela de goma confortable. El toque moderno perfecto para cualquier outfit.',
         price: 12900, compare_at_price: null, stock: 20, category_id: '6',
         category: demoCategories[5],
-        images: ['https://images.unsplash.com/photo-1549298916-b41d501d3772?w=800'],
+        images: ['https://images.unsplash.com/photo-1600269452121-4f2416e55c28?w=800'],
         sizes: ['40', '41', '42', '43', '44', '45'], colors: ['Blanco'],
         is_featured: false, is_flash_offer: false, is_active: true,
         created_at: '', updated_at: ''
@@ -240,7 +240,7 @@ export const demoProducts: Product[] = [
         description: 'El little black dress definitivo. Corte ajustado en crepe premium con detalles de encaje. Espalda descubierta con cierre invisible.',
         price: 12900, compare_at_price: null, stock: 15, category_id: '7',
         category: demoCategories[6],
-        images: ['https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800'],
+        images: ['https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=800'],
         sizes: ['XS', 'S', 'M', 'L'], colors: ['Negro'],
         is_featured: true, is_flash_offer: false, is_active: true,
         created_at: '', updated_at: ''
@@ -260,7 +260,7 @@ export const demoProducts: Product[] = [
         description: 'Blusa de algodón con encajes delicados y mangas abullonadas. Inspiración vintage con un toque contemporáneo. Cierre con botones forrados.',
         price: 5500, compare_at_price: null, stock: 25, category_id: '8',
         category: demoCategories[7],
-        images: ['https://images.unsplash.com/photo-1551163943-3f6a855d1153?w=800'],
+        images: ['https://images.unsplash.com/photo-1604575396244-6f3e2d8a2be4?w=800'],
         sizes: ['XS', 'S', 'M', 'L'], colors: ['Blanco', 'Rosa Palo'],
         is_featured: false, is_flash_offer: true, is_active: true,
         created_at: '', updated_at: ''
@@ -270,7 +270,7 @@ export const demoProducts: Product[] = [
         description: 'Falda plisada satinada con movimiento fluido. Cintura elástica para máxima comodidad. Una pieza versátil que eleva cualquier look.',
         price: 5900, compare_at_price: 7500, stock: 20, category_id: '9',
         category: demoCategories[8],
-        images: ['https://images.unsplash.com/photo-1583496661160-fb5886a0uj5b?w=800'],
+        images: ['https://images.unsplash.com/photo-1583496661160-fb5886a0abe7?w=800'],
         sizes: ['XS', 'S', 'M', 'L', 'XL'], colors: ['Dorado', 'Verde', 'Negro'],
         is_featured: true, is_flash_offer: false, is_active: true,
         created_at: '', updated_at: ''
@@ -290,7 +290,7 @@ export const demoProducts: Product[] = [
         description: 'Sandalias de tacón medio con tiras doradas. Perfectas para bodas, fiestas y eventos especiales. Plantilla acolchada para comfort.',
         price: 9900, compare_at_price: null, stock: 14, category_id: '10',
         category: demoCategories[9],
-        images: ['https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=800'],
+        images: ['https://images.unsplash.com/photo-1603487742131-4160ec999306?w=800'],
         sizes: ['35', '36', '37', '38', '39', '40'], colors: ['Dorado', 'Plateado'],
         is_featured: false, is_flash_offer: false, is_active: true,
         created_at: '', updated_at: ''
@@ -300,7 +300,7 @@ export const demoProducts: Product[] = [
         description: 'Vestido de cóctel en tul con bordados delicados. Escote corazón y falda con volumen. Ideal para eventos y celebraciones especiales.',
         price: 16900, compare_at_price: 21900, stock: 8, category_id: '7',
         category: demoCategories[6],
-        images: ['https://images.unsplash.com/photo-1568252542512-9fe8fe9c87bb?w=800'],
+        images: ['https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=800'],
         sizes: ['XS', 'S', 'M', 'L'], colors: ['Rosa', 'Azul Celeste'],
         is_featured: true, is_flash_offer: false, is_active: true,
         created_at: '', updated_at: ''
@@ -310,7 +310,7 @@ export const demoProducts: Product[] = [
         description: 'Chaqueta de piel sintética con forro interior suave. Corte corto y cierre central con cremallera. Ideal para looks urbanos.',
         price: 13900, compare_at_price: 17900, stock: 12, category_id: '7',
         category: demoCategories[6],
-        images: ['https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800'],
+        images: ['https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800'],
         sizes: ['XS', 'S', 'M', 'L'], colors: ['Negro'],
         is_featured: true, is_flash_offer: false, is_active: true,
         created_at: '', updated_at: ''
@@ -320,7 +320,7 @@ export const demoProducts: Product[] = [
         description: 'Bolso tote en cuero vegano con asas reforzadas. Espacioso, elegante y perfecto para el día a día.',
         price: 9900, compare_at_price: null, stock: 20, category_id: '11',
         category: demoCategories[10],
-        images: ['https://images.unsplash.com/photo-1520975912009-8f8f4b8f2f6b?w=800'],
+        images: ['https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=800'],
         sizes: [], colors: ['Marrón', 'Negro'],
         is_featured: false, is_flash_offer: false, is_active: true,
         created_at: '', updated_at: ''

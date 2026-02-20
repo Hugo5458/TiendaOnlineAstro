@@ -48,6 +48,16 @@ const securityHeaders: Record<string, string> = {
 export const onRequest = defineMiddleware(async (context, next) => {
     const { pathname } = context.url;
 
+    // ── HTTPS Redirect (production only) ──────────────────────────────────
+    // Force HTTPS in production. This fixes the "redirects" check.
+    const isProduction = import.meta.env.PROD;
+    const proto = context.request.headers.get('x-forwarded-proto') || context.url.protocol.replace(':', '');
+    if (isProduction && proto === 'http') {
+        const httpsUrl = new URL(context.url);
+        httpsUrl.protocol = 'https:';
+        return context.redirect(httpsUrl.toString(), 301);
+    }
+
     // Only protect /admin routes (except login)
     if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
         // Get session from cookies
@@ -75,19 +85,19 @@ export const onRequest = defineMiddleware(async (context, next) => {
                 return context.redirect('/login');
             }
 
-            // Update cookies with new tokens
+            // Update cookies with new tokens (secure flags for scanners)
             context.cookies.set('sb-access-token', refreshData.session.access_token, {
                 path: '/',
                 httpOnly: true,
-                secure: import.meta.env.PROD,
-                sameSite: 'lax',
+                secure: true,
+                sameSite: 'strict',
                 maxAge: 60 * 60 * 24 * 7 // 7 days
             });
             context.cookies.set('sb-refresh-token', refreshData.session.refresh_token, {
                 path: '/',
                 httpOnly: true,
-                secure: import.meta.env.PROD,
-                sameSite: 'lax',
+                secure: true,
+                sameSite: 'strict',
                 maxAge: 60 * 60 * 24 * 7 // 7 days
             });
 

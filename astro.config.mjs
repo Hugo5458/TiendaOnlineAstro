@@ -3,16 +3,30 @@ import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import tailwind from '@astrojs/tailwind';
 import node from '@astrojs/node';
+import sitemap from '@astrojs/sitemap';
 
 // https://astro.build/config
 export default defineConfig({
+  // ⚠️  Change this to your real production domain before deploying
+  site: 'https://fashionstore.es',
   output: 'server',
   adapter: node({
     mode: 'standalone'
   }),
   integrations: [
     react(),
-    tailwind()
+    tailwind(),
+    sitemap({
+      // Pages to exclude from the sitemap
+      filter: (page) =>
+        !page.includes('/admin') &&
+        !page.includes('/api/') &&
+        !page.includes('/auth/') &&
+        !page.includes('/completar-perfil'),
+      changefreq: 'weekly',
+      priority: 0.7,
+      lastmod: new Date(),
+    }),
   ],
   server: {
     port: 4321,

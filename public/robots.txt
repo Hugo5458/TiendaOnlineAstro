@@ -1,0 +1,14 @@
+# FashionStore - robots.txt
+# https://www.robotstxt.org/
+
+User-agent: *
+Allow: /
+
+# Block admin and API routes
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /completar-perfil
+
+# Sitemap location
+Sitemap: https://fashionstore.es/sitemap-index.xml

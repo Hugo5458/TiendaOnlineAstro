@@ -1,0 +1,9 @@
+# FashionStore Security Policy
+# This file follows the security.txt standard (RFC 9116)
+# https://securitytxt.org/
+
+Contact: mailto:hugodelmoral77@gmail.com
+Expires: 2027-02-20T00:00:00.000Z
+Preferred-Languages: es, en
+Canonical: https://fashionstore.es/.well-known/security.txt
+Policy: https://fashionstore.es/privacidad

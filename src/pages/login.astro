@@ -49,15 +49,15 @@ if (Astro.request.method === 'POST') {
       Astro.cookies.set('sb-access-token', data.session.access_token, {
         path: '/',
         httpOnly: true,
-        secure: import.meta.env.PROD,
-        sameSite: 'lax',
+        secure: true,
+        sameSite: 'strict',
         maxAge: 60 * 60 * 24 * 7
       });
       Astro.cookies.set('sb-refresh-token', data.session.refresh_token, {
         path: '/',
         httpOnly: true,
-        secure: import.meta.env.PROD,
-        sameSite: 'lax',
+        secure: true,
+        sameSite: 'strict',
         maxAge: 60 * 60 * 24 * 7
       });
       

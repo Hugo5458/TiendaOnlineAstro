@@ -3,6 +3,48 @@ import { supabase } from './lib/supabase';
 
 const ADMIN_EMAILS = ['hugodelmoral77@gmail.com', 'admin@fashionstore.com'];
 
+// ── Security Headers ──────────────────────────────────────────────────
+// These headers fix the issues reported by security scanners (e.g. Mozilla Observatory).
+// NOTE: Firewall/WAF, DNSSEC, and DoH must be configured at the hosting/DNS level.
+
+const securityHeaders: Record<string, string> = {
+    // Content-Security-Policy – controls which resources the browser is allowed to load.
+    // 'unsafe-inline' is needed because Astro injects inline <script> and <style> blocks.
+    'Content-Security-Policy': [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://maps.googleapis.com",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "img-src 'self' data: blob: https: http:",
+        "font-src 'self' https://fonts.gstatic.com",
+        "connect-src 'self' https://*.supabase.co https://api.stripe.com https://*.stripe.com",
+        "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "frame-ancestors 'self'",
+        "upgrade-insecure-requests",
+    ].join('; '),
+
+    // Strict-Transport-Security – forces HTTPS for 1 year, including sub-domains.
+    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+
+    // X-Content-Type-Options – prevents browsers from MIME-sniffing the response.
+    'X-Content-Type-Options': 'nosniff',
+
+    // X-Frame-Options – prevents click-jacking by disallowing iframes from other origins.
+    'X-Frame-Options': 'SAMEORIGIN',
+
+    // X-XSS-Protection – modern best practice is to set to "0" and rely on CSP instead.
+    // Setting to "1; mode=block" is also acceptable for older browsers.
+    'X-XSS-Protection': '1; mode=block',
+
+    // Referrer-Policy – controls how much referrer info is sent with requests.
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+
+    // Permissions-Policy – restricts browser features (camera, microphone, etc.).
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(self)',
+};
+
 export const onRequest = defineMiddleware(async (context, next) => {
     const { pathname } = context.url;
 
@@ -60,5 +102,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
         }
     }
 
-    return next();
+    // Get the response from the next middleware / route handler
+    const response = await next();
+
+    // Attach security headers to every response
+    for (const [header, value] of Object.entries(securityHeaders)) {
+        response.headers.set(header, value);
+    }
+
+    return response;
 });

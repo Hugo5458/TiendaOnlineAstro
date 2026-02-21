@@ -699,3 +699,134 @@ export const sendRefundConfirmationEmail = async (details: RefundConfirmationDet
 
   console.log(`Ticket de reembolso enviado a ${details.customerEmail}`);
 };
+
+export const sendNewsletterWelcomeEmail = async (email: string, firstName?: string, discountCode: string = 'WELCOME10') => {
+  if (!import.meta.env.SMTP_HOST || !import.meta.env.SMTP_USER) {
+    console.warn('SMTP configuration missing. Newsletter welcome email not sent.');
+    return;
+  }
+
+  const greeting = firstName ? `¡Hola ${firstName}!` : '¡Hola!';
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Bienvenido/a a FashionStore</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Courier New', Courier, monospace; background-color: #f3f4f6;">
+      <div style="max-width: 420px; margin: 40px auto; background: #ffffff; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+        
+        <!-- Ticket Top Edge -->
+        <div style="height: 12px; background: repeating-linear-gradient(90deg, transparent, transparent 8px, #111827 8px, #111827 16px);"></div>
+        
+        <!-- Header -->
+        <div style="text-align: center; padding: 25px 20px 15px; border-bottom: 2px dashed #e5e7eb;">
+          <div style="font-size: 28px; font-weight: bold; letter-spacing: 3px; color: #1a202c;">FASHIONSTORE</div>
+          <div style="font-size: 11px; color: #9ca3af; margin-top: 5px; letter-spacing: 1px;">MODA PREMIUM &amp; EXCLUSIVA</div>
+        </div>
+
+        <!-- Badge -->
+        <div style="text-align: center; padding: 15px;">
+          <div style="display: inline-block; background: linear-gradient(135deg, #111827, #374151); color: white; padding: 8px 25px; border-radius: 20px; font-size: 12px; font-weight: bold; letter-spacing: 2px;">
+            SUSCRIPCIÓN CONFIRMADA
+          </div>
+        </div>
+
+        <!-- Welcome Message -->
+        <div style="padding: 0 25px;">
+          <div style="text-align: center; padding: 10px 0 20px;">
+            <h2 style="font-size: 20px; font-weight: bold; color: #111827; margin: 0 0 10px;">${greeting}</h2>
+            <p style="font-size: 13px; color: #6b7280; margin: 0; line-height: 1.6;">
+              Te has suscrito satisfactoriamente a la newsletter de <strong>FashionStore</strong>. 
+              A partir de ahora recibirás las últimas novedades, ofertas exclusivas y tendencias directamente en tu bandeja de entrada.
+            </p>
+          </div>
+        </div>
+
+        <!-- Separator -->
+        <div style="border-top: 2px dashed #e5e7eb; margin: 10px 25px;"></div>
+
+        <!-- Discount Code Section -->
+        <div style="padding: 20px 25px; text-align: center;">
+          <div style="font-size: 11px; color: #9ca3af; margin-bottom: 10px; letter-spacing: 1px;">TU REGALO DE BIENVENIDA</div>
+          
+          <div style="background: #f9fafb; border: 2px solid #111827; border-radius: 4px; padding: 20px; margin-bottom: 10px;">
+            <div style="font-size: 11px; color: #6b7280; letter-spacing: 1px;">CÓDIGO DE DESCUENTO</div>
+            <div style="font-size: 28px; font-weight: bold; color: #111827; margin: 8px 0; font-family: 'Courier New', monospace; letter-spacing: 4px;">${discountCode}</div>
+            <div style="font-size: 13px; color: #059669; font-weight: bold;">10% de descuento en tu primera compra</div>
+          </div>
+          
+          <p style="font-size: 11px; color: #9ca3af; margin: 5px 0 0;">Introduce este código en el carrito al realizar tu pedido</p>
+        </div>
+
+        <!-- Separator -->
+        <div style="border-top: 2px dashed #e5e7eb; margin: 0 25px;"></div>
+
+        <!-- Benefits Section -->
+        <div style="padding: 20px 25px;">
+          <div style="font-size: 11px; color: #9ca3af; margin-bottom: 12px; letter-spacing: 1px;">QUÉ RECIBIRÁS</div>
+          
+          <table style="width: 100%; font-size: 12px; color: #4b5563;">
+            <tr>
+              <td style="padding: 6px 0; vertical-align: top; width: 20px;">&#10003;</td>
+              <td style="padding: 6px 0;">Acceso anticipado a nuevas colecciones</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; vertical-align: top;">&#10003;</td>
+              <td style="padding: 6px 0;">Ofertas y descuentos exclusivos para suscriptores</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; vertical-align: top;">&#10003;</td>
+              <td style="padding: 6px 0;">Guías de estilo y tendencias de temporada</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; vertical-align: top;">&#10003;</td>
+              <td style="padding: 6px 0;">Ventas flash y promociones especiales</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- Separator -->
+        <div style="border-top: 2px dashed #e5e7eb; margin: 0 25px;"></div>
+
+        <!-- CTA Button -->
+        <div style="text-align: center; padding: 25px;">
+          <a href="https://yoowww00g84ok88ww4os08o0.victoriafp.online/productos" 
+             style="display: inline-block; background: #111827; color: #ffffff; padding: 14px 40px; text-decoration: none; font-size: 12px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;">
+            DESCUBRIR NOVEDADES
+          </a>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; padding: 20px 25px; background: #f9fafb; border-top: 1px solid #e5e7eb;">
+          <div style="font-size: 12px; color: #111827; font-weight: bold;">¡Gracias por unirte a la familia FashionStore!</div>
+          <div style="font-size: 11px; color: #6b7280; margin-top: 8px;">
+            Si deseas darte de baja, puedes hacerlo en cualquier momento desde tu cuenta.
+          </div>
+          <div style="margin-top: 12px; font-size: 10px; color: #9ca3af;">
+            soporte@fashionstore.com | +34 900 123 456
+          </div>
+          <div style="margin-top: 8px; font-size: 9px;">
+            ════════════════════════════════
+          </div>
+        </div>
+
+        <!-- Ticket Bottom Edge -->
+        <div style="height: 12px; background: repeating-linear-gradient(90deg, transparent, transparent 8px, #111827 8px, #111827 16px);"></div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  await transporter.sendMail({
+    from: `"FashionStore" <${import.meta.env.SMTP_USER}>`,
+    to: email,
+    subject: `¡Bienvenido/a a FashionStore! Tu código: ${discountCode}`,
+    html: html,
+  });
+
+  console.log(`Newsletter welcome email enviado a ${email}`);
+};

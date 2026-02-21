@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { supabase, isSupabaseConfigured, createServerClient } from '../../../lib/supabase';
+import { sendNewsletterWelcomeEmail } from '../../../lib/email';
 
 export const POST: APIRoute = async ({ request }) => {
     const body = await request.json();
@@ -16,7 +17,11 @@ export const POST: APIRoute = async ({ request }) => {
     const discountCode = `WELCOME${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
     if (!isSupabaseConfigured()) {
-        // Demo mode
+        // Demo mode — still send welcome email
+        sendNewsletterWelcomeEmail(email, firstName || undefined, 'WELCOME10').catch(err =>
+            console.error('Error sending newsletter welcome email:', err)
+        );
+
         return new Response(JSON.stringify({
             success: true,
             message: '¡Te has suscrito correctamente!',
@@ -57,9 +62,14 @@ export const POST: APIRoute = async ({ request }) => {
 
         if (insertError) throw insertError;
 
+        // Send welcome email (fire-and-forget, don't block response)
+        sendNewsletterWelcomeEmail(email, firstName || undefined, 'WELCOME10').catch(err =>
+            console.error('Error sending newsletter welcome email:', err)
+        );
+
         return new Response(JSON.stringify({
             success: true,
-            message: '¡Te has suscrito correctamente!',
+            message: '¡Te has suscrito correctamente! Revisa tu email.',
             discountCode: 'WELCOME10',
             discount: '10%'
         }), { status: 200 });

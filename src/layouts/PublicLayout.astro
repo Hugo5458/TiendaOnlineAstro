@@ -367,17 +367,19 @@ const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== '
         <div>
           <h3 class="text-xs uppercase tracking-widest font-bold mb-6">Newsletter</h3>
           <p class="text-xs text-gray-500 mb-4">Suscríbete para recibir novedades y un 10% de descuento.</p>
-          <form class="flex flex-col gap-2">
+          <form id="footer-newsletter-form" class="flex flex-col gap-2">
             <input 
               type="email" 
+              id="footer-newsletter-email"
               placeholder="TU EMAIL"
               required
               class="w-full px-4 py-3 border border-gray-200 text-xs focus:border-black focus:outline-none transition-colors placeholder:text-gray-400"
             />
-            <button type="submit" class="w-full py-3 bg-black text-white text-xs uppercase tracking-widest hover:bg-gray-800 transition-colors">
+            <button type="submit" id="footer-newsletter-submit" class="w-full py-3 bg-black text-white text-xs uppercase tracking-widest hover:bg-gray-800 transition-colors">
               Suscribirme
             </button>
           </form>
+          <p id="footer-newsletter-msg" class="hidden text-xs mt-3 text-center"></p>
         </div>
       </div>
       
@@ -492,16 +494,67 @@ const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== '
     });
   }
 
+  function initFooterNewsletter() {
+    const form = document.getElementById('footer-newsletter-form') as HTMLFormElement;
+    const emailInput = document.getElementById('footer-newsletter-email') as HTMLInputElement;
+    const submitBtn = document.getElementById('footer-newsletter-submit') as HTMLButtonElement;
+    const msgEl = document.getElementById('footer-newsletter-msg');
+
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = emailInput.value.trim();
+      if (!email) return;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Procesando...';
+      msgEl?.classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/newsletter/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, source: 'footer' })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          if (msgEl) {
+            msgEl.textContent = data.alreadySubscribed
+              ? 'Ya estás suscrito/a. ¡Gracias!'
+              : '¡Suscripción exitosa! Revisa tu email.';
+            msgEl.className = 'text-xs mt-3 text-center text-green-600';
+            msgEl.classList.remove('hidden');
+          }
+          emailInput.value = '';
+          form.classList.add('hidden');
+        } else {
+          throw new Error(data.error);
+        }
+      } catch (err: any) {
+        if (msgEl) {
+          msgEl.textContent = err.message || 'Error al suscribirte';
+          msgEl.className = 'text-xs mt-3 text-center text-red-500';
+          msgEl.classList.remove('hidden');
+        }
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Suscribirme';
+      }
+    });
+  }
+
   // Initialize scripts
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       initMobileMenu();
       initSearch();
       initUserMenu();
+      initFooterNewsletter();
     });
   } else {
     initMobileMenu();
     initSearch();
     initUserMenu();
+    initFooterNewsletter();
   }
 </script>

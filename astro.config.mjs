@@ -8,7 +8,7 @@ import sitemap from '@astrojs/sitemap';
 // https://astro.build/config
 export default defineConfig({
   // ⚠️  Change this to your real production domain before deploying
-  site: 'https://fashionstore.es',
+  site: 'https://yoowww00g84ok88ww4os08o0.victoriafp.online',
   output: 'server',
   adapter: node({
     mode: 'standalone'

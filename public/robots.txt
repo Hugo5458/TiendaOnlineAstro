@@ -11,4 +11,4 @@ Disallow: /auth/
 Disallow: /completar-perfil
 
 # Sitemap location
-Sitemap: https://fashionstore.es/sitemap-index.xml
+Sitemap: https://yoowww00g84ok88ww4os08o0.victoriafp.online/sitemap-index.xml

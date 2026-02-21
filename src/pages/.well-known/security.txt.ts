@@ -7,8 +7,8 @@ const SECURITY_TXT = `# FashionStore Security Policy
 Contact: mailto:hugodelmoral77@gmail.com
 Expires: 2027-02-20T00:00:00.000Z
 Preferred-Languages: es, en
-Canonical: https://fashionstore.es/.well-known/security.txt
-Policy: https://fashionstore.es/privacidad
+Canonical: https://yoowww00g84ok88ww4os08o0.victoriafp.online/.well-known/security.txt
+Policy: https://yoowww00g84ok88ww4os08o0.victoriafp.online/privacidad
 `;
 
 export const GET: APIRoute = () => {

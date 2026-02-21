@@ -48,15 +48,9 @@ const securityHeaders: Record<string, string> = {
 export const onRequest = defineMiddleware(async (context, next) => {
     const { pathname } = context.url;
 
-    // ── HTTPS Redirect (production only) ──────────────────────────────────
-    // Force HTTPS in production. This fixes the "redirects" check.
-    const isProduction = import.meta.env.PROD;
-    const proto = context.request.headers.get('x-forwarded-proto') || context.url.protocol.replace(':', '');
-    if (isProduction && proto === 'http') {
-        const httpsUrl = new URL(context.url);
-        httpsUrl.protocol = 'https:';
-        return context.redirect(httpsUrl.toString(), 301);
-    }
+    // NOTE: HTTPS redirect is handled by Cloudflare. Do NOT add redirect logic
+    // here, as it causes infinite redirect loops (Cloudflare may forward
+    // x-forwarded-proto: http even after upgrading the connection).
 
     // Only protect /admin routes (except login)
     if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {

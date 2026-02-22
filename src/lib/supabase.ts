@@ -124,6 +124,39 @@ export interface DiscountCode {
     updated_at: string;
 }
 
+export interface Invoice {
+    id: string;
+    invoice_number: string;
+    order_id: string;
+    type: 'invoice' | 'credit_note';
+    parent_invoice_id: string | null;
+    customer_name: string;
+    customer_email: string;
+    customer_nif: string | null;
+    billing_address: object | null;
+    subtotal: number;
+    shipping_cost: number;
+    tax_rate: number;
+    tax_amount: number;
+    discount_amount: number;
+    total: number; // Negative for credit notes (abonos)
+    status: 'draft' | 'issued' | 'paid' | 'voided';
+    notes: string | null;
+    issued_at: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface InvoiceItem {
+    id: string;
+    invoice_id: string;
+    product_name: string;
+    quantity: number;
+    unit_price: number;
+    total_price: number; // Negative for credit notes
+    created_at: string;
+}
+
 // Demo data for when Supabase is not configured
 export const demoCategories: Category[] = [
     // Categorías principales

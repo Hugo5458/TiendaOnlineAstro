@@ -84,39 +84,39 @@ export const POST: APIRoute = async ({ request }) => {
                         .select('stock')
                         .eq('id', items[0].id)
                         .single();
-                        
+
                     // Si detectamos que necesitamos asegurar la bajada de stock
                     // NOTA: Esta es una medida de seguridad. Lo ideal es que process_order lo maneje.
                     // Aquí forzamos la actualización iterando sobre los items.
                     // Para evitar doble conteo, idealmente process_order debería hacerlo.
                     // Pero dado el requerimiento del usuario, aseguraremos que se baje.
-                    
+
                     // Vamos a intentar bajar el stock explícitamente si process_order no tuviera esa lógica
                     // O simplemente para asegurar que pase.
                     // Para ser seguros, iteramos y usamos una función decrement_stock segura o update directo
-                    
+
                     for (const item of items) {
-                         const { error: rpcError } = await supabaseAdmin.rpc('decrement_stock', {
-                             p_product_id: item.id,
-                             p_quantity: item.quantity
-                         });
-                         
-                         // Si falla el RPC (no existe o error), hacemos update manual como fallback
-                         if (rpcError) {
-                             console.log(`RPC decrement_stock fallo o no existe para ${item.id}, intentando update manual...`);
-                             const { data: currentProd } = await supabaseAdmin
+                        const { error: rpcError } = await supabaseAdmin.rpc('decrement_stock', {
+                            p_product_id: item.id,
+                            p_quantity: item.quantity
+                        });
+
+                        // Si falla el RPC (no existe o error), hacemos update manual como fallback
+                        if (rpcError) {
+                            console.log(`RPC decrement_stock fallo o no existe para ${item.id}, intentando update manual...`);
+                            const { data: currentProd } = await supabaseAdmin
                                 .from('products')
                                 .select('stock')
                                 .eq('id', item.id)
                                 .single();
-                                
-                             if (currentProd) {
-                                 await supabaseAdmin
+
+                            if (currentProd) {
+                                await supabaseAdmin
                                     .from('products')
                                     .update({ stock: Math.max(0, currentProd.stock - item.quantity) })
                                     .eq('id', item.id);
-                             }
-                         }
+                            }
+                        }
                     }
                 } catch (stockErr) {
                     console.error('Error en gestión de stock manual:', stockErr);
@@ -133,6 +133,16 @@ export const POST: APIRoute = async ({ request }) => {
                         payment_intent_id: session.payment_intent as string
                     })
                     .eq('id', orderId);
+
+                // Generate invoice (factura) for this order
+                try {
+                    await supabaseAdmin.rpc('generate_invoice', {
+                        p_order_id: orderId
+                    });
+                } catch (invoiceErr) {
+                    console.error('Error generating invoice:', invoiceErr);
+                    // Don't fail the webhook if invoice generation fails
+                }
 
                 // Send order confirmation email (non-blocking for webhook success)
                 (async () => {

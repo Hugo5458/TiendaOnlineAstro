@@ -22,7 +22,7 @@ if (!isAdmin) {
 
 // Get dashboard stats
 const products = await getProducts();
-const { data: orders } = await supabase.from('orders').select('*');
+const { data: orders } = await supabase.from('orders').select('*').order('created_at', { ascending: true });
 const { data: settings } = await supabase.from('site_settings').select('*');
 
 const stats = {
@@ -31,13 +31,44 @@ const stats = {
   lowStock: products.filter(p => p.stock <= 5 && p.stock > 0).length,
   outOfStock: products.filter(p => p.stock === 0).length,
   totalOrders: orders?.length || 0,
-  pendingOrders: orders?.filter(o => o.status === 'pending').length || 0,
+  pendingOrders: orders?.filter(o => o.status === 'pending' || o.status === 'processing').length || 0,
+  paidOrders: orders?.filter(o => o.payment_status === 'paid').length || 0,
+  shippedOrders: orders?.filter(o => o.status === 'shipped').length || 0,
+  deliveredOrders: orders?.filter(o => o.status === 'delivered').length || 0,
+  cancelledOrders: orders?.filter(o => o.status === 'cancelled').length || 0,
 };
 
 const showFlashOffers = settings?.find(s => s.key === 'show_flash_offers')?.value === true;
 
-// Calculate total revenue
-const totalRevenue = orders?.reduce((sum, order) => sum + (order.total || 0), 0) || 0;
+// Calculate total revenue (only paid orders)
+const totalRevenue = orders?.filter(o => o.payment_status === 'paid').reduce((sum, order) => sum + (order.total || 0), 0) || 0;
+
+// Calculate monthly revenue for chart (last 6 months)
+const now = new Date();
+const monthlyRevenue: { month: string; revenue: number; count: number }[] = [];
+for (let i = 5; i >= 0; i--) {
+  const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+  const monthStr = d.toLocaleDateString('es-ES', { month: 'short' });
+  const yearMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  const monthOrders = orders?.filter(o => {
+    const oDate = new Date(o.created_at);
+    return `${oDate.getFullYear()}-${String(oDate.getMonth() + 1).padStart(2, '0')}` === yearMonth
+      && o.payment_status === 'paid';
+  }) || [];
+  monthlyRevenue.push({
+    month: monthStr.charAt(0).toUpperCase() + monthStr.slice(1),
+    revenue: monthOrders.reduce((s, o) => s + (o.total || 0), 0),
+    count: monthOrders.length,
+  });
+}
+
+// Order status distribution for doughnut chart
+const statusDistribution = {
+  pendientes: stats.pendingOrders,
+  enviados: stats.shippedOrders,
+  entregados: stats.deliveredOrders,
+  cancelados: stats.cancelledOrders,
+};
 ---
 
 <AdminLayout title="Dashboard">
@@ -60,6 +91,32 @@ const totalRevenue = orders?.reduce((sum, order) => sum + (order.total || 0), 0)
 
   <!-- Stats Grid -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Total Revenue (NEW KPI) -->
+    <div class="stat-card group">
+      <div class="flex items-start justify-between">
+        <div>
+          <p class="text-gray-500 text-sm font-medium">Ventas totales</p>
+          <p class="text-3xl font-bold text-gray-900 mt-2 stat-number">{formatPrice(totalRevenue)}</p>
+          <div class="flex items-center mt-3 text-sm">
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 font-medium">
+              <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
+              {stats.paidOrders} pagados
+            </span>
+          </div>
+        </div>
+        <div class="stat-icon bg-gradient-to-br from-green-500 to-emerald-600">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+      </div>
+      <div class="stat-progress mt-4">
+        <div class="stat-progress-bar bg-emerald-500" style="width: 100%"></div>
+      </div>
+    </div>
+
     <!-- Total Products -->
     <div class="stat-card group">
       <div class="flex items-start justify-between">
@@ -82,36 +139,10 @@ const totalRevenue = orders?.reduce((sum, order) => sum + (order.total || 0), 0)
         </div>
       </div>
       <div class="stat-progress mt-4">
-        <div class="stat-progress-bar bg-indigo-500" style={`width: ${(stats.activeProducts / stats.totalProducts) * 100}%`}></div>
+        <div class="stat-progress-bar bg-indigo-500" style={`width: ${(stats.activeProducts / Math.max(stats.totalProducts, 1)) * 100}%`}></div>
       </div>
     </div>
-    
-    <!-- Low Stock Alert -->
-    <div class="stat-card group">
-      <div class="flex items-start justify-between">
-        <div>
-          <p class="text-gray-500 text-sm font-medium">Stock bajo</p>
-          <p class="text-4xl font-bold text-gray-900 mt-2 stat-number">{stats.lowStock}</p>
-          <div class="flex items-center mt-3 text-sm">
-            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-red-100 text-red-700 font-medium">
-              <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              {stats.outOfStock} agotados
-            </span>
-          </div>
-        </div>
-        <div class="stat-icon bg-gradient-to-br from-amber-500 to-orange-600">
-          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-        </div>
-      </div>
-      <div class="stat-progress mt-4">
-        <div class="stat-progress-bar bg-amber-500" style={`width: ${Math.min((stats.lowStock / 10) * 100, 100)}%`}></div>
-      </div>
-    </div>
-    
+
     <!-- Orders -->
     <div class="stat-card group">
       <div class="flex items-start justify-between">
@@ -127,14 +158,14 @@ const totalRevenue = orders?.reduce((sum, order) => sum + (order.total || 0), 0)
             </span>
           </div>
         </div>
-        <div class="stat-icon bg-gradient-to-br from-emerald-500 to-teal-600">
+        <div class="stat-icon bg-gradient-to-br from-blue-500 to-indigo-600">
           <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
           </svg>
         </div>
       </div>
       <div class="stat-progress mt-4">
-        <div class="stat-progress-bar bg-emerald-500" style={`width: ${Math.min((stats.totalOrders / 50) * 100, 100)}%`}></div>
+        <div class="stat-progress-bar bg-blue-500" style={`width: ${Math.min((stats.totalOrders / 50) * 100, 100)}%`}></div>
       </div>
     </div>
     
@@ -170,6 +201,44 @@ const totalRevenue = orders?.reduce((sum, order) => sum + (order.total || 0), 0)
           </span>
         </label>
       </form>
+    </div>
+  </div>
+
+  <!-- Charts Section (NEW) -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <!-- Monthly Revenue Chart -->
+    <div class="content-card lg:col-span-2">
+      <div class="card-header">
+        <div class="flex items-center gap-3">
+          <div class="p-2 rounded-xl bg-emerald-100">
+            <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <h2 class="font-bold text-gray-900 text-lg">Ventas mensuales</h2>
+        </div>
+      </div>
+      <div class="p-6">
+        <canvas id="revenueChart" height="260"></canvas>
+      </div>
+    </div>
+
+    <!-- Order Status Distribution -->
+    <div class="content-card">
+      <div class="card-header">
+        <div class="flex items-center gap-3">
+          <div class="p-2 rounded-xl bg-indigo-100">
+            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+            </svg>
+          </div>
+          <h2 class="font-bold text-gray-900 text-lg">Estado pedidos</h2>
+        </div>
+      </div>
+      <div class="p-6 flex items-center justify-center">
+        <canvas id="statusChart" height="220"></canvas>
+      </div>
     </div>
   </div>
   
@@ -245,10 +314,7 @@ const totalRevenue = orders?.reduce((sum, order) => sum + (order.total || 0), 0)
         </div>
       </div>
       <div class="p-6 grid grid-cols-2 gap-4">
-        <a 
-          href="/admin/productos/nuevo"
-          class="action-card group"
-        >
+        <a href="/admin/productos/nuevo" class="action-card group">
           <div class="action-icon bg-gradient-to-br from-indigo-500 to-purple-600 group-hover:scale-110">
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -258,10 +324,7 @@ const totalRevenue = orders?.reduce((sum, order) => sum + (order.total || 0), 0)
           <span class="text-xs text-gray-500">Añadir al catálogo</span>
         </a>
         
-        <a 
-          href="/admin/productos"
-          class="action-card group"
-        >
+        <a href="/admin/productos" class="action-card group">
           <div class="action-icon bg-gradient-to-br from-slate-600 to-slate-800 group-hover:scale-110">
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
@@ -271,10 +334,7 @@ const totalRevenue = orders?.reduce((sum, order) => sum + (order.total || 0), 0)
           <span class="text-xs text-gray-500">Gestionar catálogo</span>
         </a>
         
-        <a 
-          href="/admin/pedidos"
-          class="action-card group"
-        >
+        <a href="/admin/pedidos" class="action-card group">
           <div class="action-icon bg-gradient-to-br from-emerald-500 to-teal-600 group-hover:scale-110">
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -284,10 +344,7 @@ const totalRevenue = orders?.reduce((sum, order) => sum + (order.total || 0), 0)
           <span class="text-xs text-gray-500">Gestionar ventas</span>
         </a>
         
-        <a 
-          href="/admin/descuentos"
-          class="action-card group"
-        >
+        <a href="/admin/descuentos" class="action-card group">
           <div class="action-icon bg-gradient-to-br from-rose-500 to-pink-600 group-hover:scale-110">
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
@@ -297,11 +354,7 @@ const totalRevenue = orders?.reduce((sum, order) => sum + (order.total || 0), 0)
           <span class="text-xs text-gray-500">Códigos promocionales</span>
         </a>
         
-        <a 
-          href="/"
-          target="_blank"
-          class="action-card group"
-        >
+        <a href="/" target="_blank" class="action-card group">
           <div class="action-icon bg-gradient-to-br from-amber-400 to-orange-500 group-hover:scale-110">
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -309,6 +362,16 @@ const totalRevenue = orders?.reduce((sum, order) => sum + (order.total || 0), 0)
           </div>
           <span class="text-sm font-semibold text-gray-900 group-hover:text-amber-600 transition-colors">Ver tienda</span>
           <span class="text-xs text-gray-500">Abrir en nueva pestaña</span>
+        </a>
+
+        <a href="/admin/categorias" class="action-card group">
+          <div class="action-icon bg-gradient-to-br from-cyan-500 to-blue-600 group-hover:scale-110">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+          </div>
+          <span class="text-sm font-semibold text-gray-900 group-hover:text-cyan-600 transition-colors">Categorías</span>
+          <span class="text-xs text-gray-500">Gestionar secciones</span>
         </a>
       </div>
     </div>
@@ -514,8 +577,11 @@ const totalRevenue = orders?.reduce((sum, order) => sum + (order.total || 0), 0)
   }
 </style>
 
-<script>
-  const toggle = document.getElementById('flash-offers-toggle') as HTMLInputElement;
+<script is:inline src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+<script is:inline define:vars={{ monthlyRevenue, statusDistribution }}>
+  // Flash offers toggle
+  const toggle = document.getElementById('flash-offers-toggle');
   
   toggle?.addEventListener('change', async () => {
     try {
@@ -532,7 +598,116 @@ const totalRevenue = orders?.reduce((sum, order) => sum + (order.total || 0), 0)
       }
     } catch (error) {
       console.error('Error updating flash offers:', error);
-      toggle.checked = !toggle.checked; // Revert on error
+      toggle.checked = !toggle.checked;
     }
   });
+
+  // ===== CHART.JS CHARTS =====
+  if (typeof Chart !== 'undefined') {
+    // Revenue Bar Chart
+    const revenueCtx = document.getElementById('revenueChart');
+    if (revenueCtx) {
+      const ctx = revenueCtx.getContext('2d');
+      const gradient = ctx.createLinearGradient(0, 0, 0, 260);
+      gradient.addColorStop(0, 'rgba(16, 185, 129, 0.8)');
+      gradient.addColorStop(1, 'rgba(16, 185, 129, 0.05)');
+
+      new Chart(revenueCtx, {
+        type: 'bar',
+        data: {
+          labels: monthlyRevenue.map(m => m.month),
+          datasets: [{
+            label: 'Ventas (€)',
+            data: monthlyRevenue.map(m => m.revenue / 100),
+            backgroundColor: gradient,
+            borderColor: 'rgba(16, 185, 129, 1)',
+            borderWidth: 2,
+            borderRadius: 8,
+            borderSkipped: false,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#1f2937',
+              titleFont: { size: 13, weight: '600' },
+              bodyFont: { size: 12 },
+              padding: 12,
+              cornerRadius: 8,
+              callbacks: {
+                label: function(context) {
+                  const idx = context.dataIndex;
+                  const count = monthlyRevenue[idx].count;
+                  return `${context.parsed.y.toFixed(2)}€ (${count} pedidos)`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(0,0,0,0.04)' },
+              ticks: {
+                callback: function(value) { return value + '€'; },
+                font: { size: 11 }
+              }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { font: { size: 11 } }
+            }
+          }
+        }
+      });
+    }
+
+    // Order Status Doughnut Chart
+    const statusCtx = document.getElementById('statusChart');
+    if (statusCtx) {
+      const hasData = Object.values(statusDistribution).some(v => v > 0);
+      new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Pendientes', 'Enviados', 'Entregados', 'Cancelados'],
+          datasets: [{
+            data: hasData
+              ? [statusDistribution.pendientes, statusDistribution.enviados, statusDistribution.entregados, statusDistribution.cancelados]
+              : [1],
+            backgroundColor: hasData
+              ? ['#f59e0b', '#3b82f6', '#10b981', '#ef4444']
+              : ['#e5e7eb'],
+            borderWidth: 0,
+            hoverOffset: 8,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '65%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                padding: 16,
+                usePointStyle: true,
+                pointStyleWidth: 8,
+                font: { size: 11 }
+              }
+            },
+            tooltip: {
+              backgroundColor: '#1f2937',
+              titleFont: { size: 13, weight: '600' },
+              bodyFont: { size: 12 },
+              padding: 12,
+              cornerRadius: 8,
+            }
+          }
+        }
+      });
+    }
+  }
 </script>
+

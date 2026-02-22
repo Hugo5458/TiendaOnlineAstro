@@ -3,6 +3,7 @@ import PublicLayout from '../../layouts/PublicLayout.astro';
 import ProductCard from '../../components/product/ProductCard.astro';
 import ProductGallery from '../../components/product/ProductGallery.astro';
 import AddToCartButton from '../../components/islands/AddToCartButton';
+import SizeRecommender from '../../components/islands/SizeRecommender';
 import { getProducts, getProductBySlug } from '../../lib/supabase';
 import { formatPrice, calculateDiscount, getStockStatus } from '../../lib/utils';
 
@@ -134,6 +135,13 @@ const relatedProducts = allProducts
           created_at: product.created_at,
           updated_at: product.updated_at,
         }} />
+
+        <!-- Size Recommender (React Island) -->
+        {product.sizes && product.sizes.length > 0 && (
+          <div class="pt-4">
+            <SizeRecommender client:idle />
+          </div>
+        )}
         
         <!-- Trust Badges - P&B Style -->
         <div class="pt-8 border-t border-gray-100 space-y-4">

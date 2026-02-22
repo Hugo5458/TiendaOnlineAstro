@@ -39,12 +39,22 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         const serverClient = createServerClient();
 
-        // Call the atomic refund processing function
-        const { data, error } = await serverClient.rpc('process_refund_atomic', {
+        // Call the atomic refund processing function (with credit note generation)
+        let data, error;
+        ({ data, error } = await serverClient.rpc('process_refund_with_credit_note', {
             p_order_id: orderId,
             p_return_request_id: returnRequestId || null,
             p_admin_notes: adminNotes || null
-        });
+        }));
+
+        // Fallback to old function if new one doesn't exist
+        if (error && error.message?.includes('function')) {
+            ({ data, error } = await serverClient.rpc('process_refund_atomic', {
+                p_order_id: orderId,
+                p_return_request_id: returnRequestId || null,
+                p_admin_notes: adminNotes || null
+            }));
+        }
 
         if (error) {
             console.error('Refund RPC error:', error);

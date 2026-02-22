@@ -1,20 +1,30 @@
 ---
 import PublicLayout from '../../layouts/PublicLayout.astro';
 import ProductCard from '../../components/product/ProductCard.astro';
-import { getProducts } from '../../lib/supabase';
+import { getProducts, getCategories } from '../../lib/supabase';
 
 export const prerender = false;
 
-// Get all products
+// Get all products and categories
 const products = await getProducts();
+const categories = await getCategories();
 
-// Get category from URL params for filtering
+// Get filters from URL params
 const url = Astro.url;
 const categoryFilter = url.searchParams.get('categoria');
 const sortBy = url.searchParams.get('orden') || 'newest';
 const isOffers = url.searchParams.get('ofertas') === 'true';
+const searchQuery = url.searchParams.get('q')?.trim() || '';
 
 let filteredProducts = products;
+
+// Apply search query filter
+if (searchQuery) {
+  filteredProducts = filteredProducts.filter(p =>
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+}
 
 // Apply offers filter
 if (isOffers) {
@@ -39,13 +49,21 @@ switch (sortBy) {
     break;
   // newest is default (already sorted by created_at desc)
 }
+
+const pageTitle = searchQuery
+  ? `Resultados para "${searchQuery}"`
+  : isOffers
+    ? 'Rebajas'
+    : categoryFilter
+      ? categories.find(c => c.slug === categoryFilter)?.name || 'Productos'
+      : 'Productos';
 ---
 
-<PublicLayout title={`${isOffers ? 'Rebajas' : 'Todos los Productos'} | FashionStore`}>
+<PublicLayout title={`${pageTitle} | FashionStore`}>
   <!-- Hero Banner - P&B Style -->
   <section class="bg-gray-100 py-16 lg:py-24 text-center">
     <h1 class="text-4xl md:text-5xl lg:text-6xl uppercase tracking-widest font-light">
-      {isOffers ? 'Rebajas' : 'Productos'}
+      {pageTitle}
     </h1>
     <p class="text-sm text-gray-500 mt-4 uppercase tracking-wider">
       {filteredProducts.length} artículos
@@ -53,6 +71,30 @@ switch (sortBy) {
   </section>
 
   <div class="max-w-screen-2xl mx-auto px-4 lg:px-8 py-8 lg:py-12">
+    <!-- Category Filter Bar -->
+    <div class="flex flex-wrap items-center gap-2 mb-6 pb-6 border-b border-gray-100">
+      <a
+        href="/productos"
+        class={`px-4 py-2 text-xs uppercase tracking-widest border transition-all duration-200 ${!categoryFilter && !isOffers ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-200 hover:border-black'}`}
+      >
+        Todos
+      </a>
+      {categories.map(cat => (
+        <a
+          href={`/productos?categoria=${cat.slug}`}
+          class={`px-4 py-2 text-xs uppercase tracking-widest border transition-all duration-200 ${categoryFilter === cat.slug ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-200 hover:border-black'}`}
+        >
+          {cat.name}
+        </a>
+      ))}
+      <a
+        href="/productos?ofertas=true"
+        class={`px-4 py-2 text-xs uppercase tracking-widest border transition-all duration-200 ${isOffers ? 'bg-accent-500 text-white border-accent-500' : 'bg-white text-accent-500 border-gray-200 hover:border-accent-500'}`}
+      >
+        Rebajas
+      </a>
+    </div>
+
     <!-- Filter Bar - P&B Style -->
     <div class="flex items-center justify-between py-4 border-b border-gray-100 mb-8">
       <!-- Breadcrumb -->

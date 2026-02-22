@@ -56,12 +56,17 @@ if (Astro.request.method === 'POST') {
       if (existingUser) {
         error = 'Este nombre de usuario ya está en uso';
       } else {
+        // Build the redirect URL using the real site domain (never localhost)
+        const siteUrl = import.meta.env.PUBLIC_SITE_URL 
+          || Astro.site?.origin 
+          || Astro.url.origin;
+
         // Create user
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${import.meta.env.PUBLIC_SITE_URL || 'http://localhost:4321'}/confirmacion-email`,
+            emailRedirectTo: `${siteUrl}/confirmacion-email`,
             data: {
               username: username.toLowerCase(),
               full_name: fullName,

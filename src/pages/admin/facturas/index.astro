@@ -1,0 +1,548 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { supabase } from '../../../lib/supabase';
+import { formatPrice } from '../../../lib/utils';
+
+export const prerender = false;
+
+// Check authentication
+const accessToken = Astro.cookies.get('sb-access-token')?.value;
+if (!accessToken) {
+  return Astro.redirect('/login?redirect=/admin/facturas');
+}
+
+const { data: { user } } = await supabase.auth.getUser(accessToken);
+const ADMIN_EMAILS = ['hugodelmoral77@gmail.com', 'admin@fashionstore.com'];
+const isAdmin = !!user?.email && ADMIN_EMAILS.includes(user.email);
+
+if (!isAdmin) {
+  return Astro.redirect('/cuenta');
+}
+
+// Get filter from URL params
+const url = new URL(Astro.request.url);
+const typeFilter = url.searchParams.get('tipo') || 'all';
+
+// Fetch invoices with order info
+let query = supabase
+  .from('invoices')
+  .select('*, invoice_items(*)')
+  .order('created_at', { ascending: false });
+
+if (typeFilter === 'invoice') {
+  query = query.eq('type', 'invoice');
+} else if (typeFilter === 'credit_note') {
+  query = query.eq('type', 'credit_note');
+}
+
+const { data: invoices, error } = await query;
+
+// Calculate totals
+const allInvoices = invoices || [];
+const totalFacturas = allInvoices.filter(i => i.type === 'invoice');
+const totalAbonos = allInvoices.filter(i => i.type === 'credit_note');
+
+const sumFacturas = totalFacturas.reduce((s, i) => s + (i.total || 0), 0);
+const sumAbonos = totalAbonos.reduce((s, i) => s + (i.total || 0), 0); // already negative 
+const balance = sumFacturas + sumAbonos; // net revenue
+
+function formatInvoiceDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function getStatusLabel(status: string) {
+  const labels: Record<string, { text: string; class: string }> = {
+    draft: { text: 'Borrador', class: 'bg-gray-100 text-gray-700' },
+    issued: { text: 'Emitida', class: 'bg-blue-100 text-blue-700' },
+    paid: { text: 'Pagada', class: 'bg-emerald-100 text-emerald-700' },
+    voided: { text: 'Anulada', class: 'bg-red-100 text-red-700' },
+  };
+  return labels[status] || { text: status, class: 'bg-gray-100 text-gray-700' };
+}
+---
+
+<AdminLayout title="Facturas">
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <!-- Total Invoices -->
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+          </svg>
+        </div>
+        <div>
+          <p class="text-sm text-gray-500 font-medium">Facturas emitidas</p>
+          <p class="text-2xl font-bold text-gray-900">{totalFacturas.length}</p>
+          <p class="text-sm text-emerald-600 font-medium">{formatPrice(sumFacturas)}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Credit Notes -->
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg shadow-red-500/30">
+          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+          </svg>
+        </div>
+        <div>
+          <p class="text-sm text-gray-500 font-medium">Notas de abono</p>
+          <p class="text-2xl font-bold text-gray-900">{totalAbonos.length}</p>
+          <p class="text-sm text-red-600 font-medium">{formatPrice(sumAbonos)}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Net Balance -->
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div>
+          <p class="text-sm text-gray-500 font-medium">Balance neto (caja)</p>
+          <p class="text-2xl font-bold text-gray-900">{formatPrice(balance)}</p>
+          <p class="text-sm text-gray-500">Facturas - Abonos</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 mb-6">
+    <div class="p-4 flex flex-wrap items-center gap-3">
+      <span class="text-sm font-medium text-gray-500">Filtrar por:</span>
+      <div class="flex gap-2">
+        <a
+          href="/admin/facturas"
+          class={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+            typeFilter === 'all'
+              ? 'bg-gray-900 text-white shadow-md'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          Todas
+        </a>
+        <a
+          href="/admin/facturas?tipo=invoice"
+          class={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+            typeFilter === 'invoice'
+              ? 'bg-emerald-600 text-white shadow-md'
+              : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+          }`}
+        >
+          <span class="flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Facturas
+          </span>
+        </a>
+        <a
+          href="/admin/facturas?tipo=credit_note"
+          class={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+            typeFilter === 'credit_note'
+              ? 'bg-red-600 text-white shadow-md'
+              : 'bg-red-50 text-red-700 hover:bg-red-100'
+          }`}
+        >
+          <span class="flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 15v-1a4 4 0 00-4-4H8m0 0l3 3m-3-3l3-3m9 14V5a2 2 0 00-2-2H6a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2z" />
+            </svg>
+            Notas de abono
+          </span>
+        </a>
+      </div>
+      <div class="ml-auto text-sm text-gray-500">
+        {allInvoices.length} documento{allInvoices.length !== 1 ? 's' : ''}
+      </div>
+    </div>
+  </div>
+
+  <!-- Invoices Table -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    {allInvoices.length === 0 ? (
+      <div class="text-center py-16">
+        <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+          <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+          </svg>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-1">No hay facturas</h3>
+        <p class="text-sm text-gray-500">Las facturas se generan automáticamente cuando se completa un pedido.</p>
+      </div>
+    ) : (
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="bg-gray-50 border-b border-gray-100">
+              <th class="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Nº Factura</th>
+              <th class="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Tipo</th>
+              <th class="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Cliente</th>
+              <th class="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Fecha</th>
+              <th class="text-right px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Subtotal</th>
+              <th class="text-right px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">IVA</th>
+              <th class="text-right px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</th>
+              <th class="text-center px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Estado</th>
+              <th class="text-center px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Detalles</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {allInvoices.map((invoice) => {
+              const statusInfo = getStatusLabel(invoice.status);
+              const isCredit = invoice.type === 'credit_note';
+              return (
+                <tr class={`hover:bg-gray-50/50 transition-colors ${isCredit ? 'bg-red-50/30' : ''}`}>
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-2">
+                      {isCredit ? (
+                        <span class="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span>
+                      ) : (
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"></span>
+                      )}
+                      <span class="font-mono text-sm font-semibold text-gray-900">{invoice.invoice_number}</span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold ${
+                      isCredit ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
+                    }`}>
+                      {isCredit ? 'Nota de abono' : 'Factura'}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div>
+                      <p class="text-sm font-medium text-gray-900">{invoice.customer_name}</p>
+                      <p class="text-xs text-gray-500">{invoice.customer_email}</p>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="text-sm text-gray-600">{formatInvoiceDate(invoice.issued_at || invoice.created_at)}</span>
+                  </td>
+                  <td class={`px-6 py-4 text-right text-sm font-medium ${isCredit ? 'text-red-600' : 'text-gray-900'}`}>
+                    {formatPrice(invoice.subtotal)}
+                  </td>
+                  <td class={`px-6 py-4 text-right text-sm ${isCredit ? 'text-red-600' : 'text-gray-600'}`}>
+                    {formatPrice(invoice.tax_amount)} <span class="text-xs text-gray-400">({invoice.tax_rate}%)</span>
+                  </td>
+                  <td class={`px-6 py-4 text-right text-sm font-bold ${isCredit ? 'text-red-600' : 'text-emerald-600'}`}>
+                    {formatPrice(invoice.total)}
+                  </td>
+                  <td class="px-6 py-4 text-center">
+                    <span class={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusInfo.class}`}>
+                      {statusInfo.text}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-center">
+                    <button
+                      class="invoice-detail-btn inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-700 hover:bg-indigo-100 hover:text-indigo-700 transition-all duration-200"
+                      data-invoice={JSON.stringify({
+                        number: invoice.invoice_number,
+                        type: invoice.type,
+                        customer_name: invoice.customer_name,
+                        customer_email: invoice.customer_email,
+                        customer_nif: invoice.customer_nif,
+                        billing_address: invoice.billing_address,
+                        subtotal: invoice.subtotal,
+                        shipping_cost: invoice.shipping_cost,
+                        tax_rate: invoice.tax_rate,
+                        tax_amount: invoice.tax_amount,
+                        discount_amount: invoice.discount_amount,
+                        total: invoice.total,
+                        status: invoice.status,
+                        notes: invoice.notes,
+                        issued_at: invoice.issued_at,
+                        items: invoice.invoice_items || [],
+                      })}
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      Ver
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+
+  <!-- Invoice Detail Modal -->
+  <div id="invoice-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="invoice-modal-backdrop"></div>
+    <div class="relative flex items-center justify-center min-h-screen p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" id="invoice-modal-content">
+        <!-- Header -->
+        <div class="sticky top-0 bg-white border-b border-gray-100 px-8 py-5 flex items-center justify-between rounded-t-2xl z-10">
+          <div>
+            <h2 class="text-xl font-bold text-gray-900" id="modal-title">Factura</h2>
+            <p class="text-sm text-gray-500" id="modal-number"></p>
+          </div>
+          <button id="close-invoice-modal" class="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-gray-100 transition-colors">
+            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="px-8 py-6 space-y-6">
+          <!-- Customer Info -->
+          <div class="grid grid-cols-2 gap-6">
+            <div>
+              <p class="text-xs uppercase tracking-wider text-gray-400 mb-1">Cliente</p>
+              <p class="text-sm font-semibold text-gray-900" id="modal-customer-name"></p>
+              <p class="text-sm text-gray-600" id="modal-customer-email"></p>
+              <p class="text-sm text-gray-500" id="modal-customer-nif"></p>
+            </div>
+            <div class="text-right">
+              <p class="text-xs uppercase tracking-wider text-gray-400 mb-1">Fecha de emisión</p>
+              <p class="text-sm font-semibold text-gray-900" id="modal-date"></p>
+              <p class="text-xs mt-1" id="modal-status-badge"></p>
+            </div>
+          </div>
+
+          <!-- Billing Address -->
+          <div id="modal-address-section" class="hidden">
+            <p class="text-xs uppercase tracking-wider text-gray-400 mb-1">Dirección de facturación</p>
+            <p class="text-sm text-gray-700" id="modal-address"></p>
+          </div>
+
+          <!-- Items Table -->
+          <div>
+            <p class="text-xs uppercase tracking-wider text-gray-400 mb-3">Líneas de detalle</p>
+            <div class="border border-gray-200 rounded-xl overflow-hidden">
+              <table class="w-full">
+                <thead>
+                  <tr class="bg-gray-50">
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Producto</th>
+                    <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Cant.</th>
+                    <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Precio ud.</th>
+                    <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Total</th>
+                  </tr>
+                </thead>
+                <tbody id="modal-items" class="divide-y divide-gray-100">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Totals -->
+          <div class="bg-gray-50 rounded-xl p-5 space-y-2">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">Subtotal</span>
+              <span class="font-medium" id="modal-subtotal"></span>
+            </div>
+            <div class="flex justify-between text-sm" id="modal-shipping-row">
+              <span class="text-gray-600">Envío</span>
+              <span class="font-medium" id="modal-shipping"></span>
+            </div>
+            <div class="flex justify-between text-sm" id="modal-discount-row">
+              <span class="text-gray-600">Descuento</span>
+              <span class="font-medium text-green-600" id="modal-discount"></span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">IVA (<span id="modal-tax-rate"></span>%)</span>
+              <span class="font-medium" id="modal-tax"></span>
+            </div>
+            <div class="border-t border-gray-200 pt-2 mt-2 flex justify-between">
+              <span class="text-base font-bold text-gray-900">Total</span>
+              <span class="text-base font-bold" id="modal-total"></span>
+            </div>
+          </div>
+
+          <!-- Notes -->
+          <div id="modal-notes-section" class="hidden">
+            <p class="text-xs uppercase tracking-wider text-gray-400 mb-1">Notas</p>
+            <p class="text-sm text-gray-700 bg-amber-50 rounded-lg p-3" id="modal-notes"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</AdminLayout>
+
+<style>
+  table th {
+    white-space: nowrap;
+  }
+
+  .invoice-detail-btn:active {
+    transform: scale(0.95);
+  }
+
+  #invoice-modal {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  #invoice-modal-content {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+<script is:inline>
+  function formatCents(cents) {
+    const euros = (cents / 100).toFixed(2);
+    return euros.replace('.', ',') + ' €';
+  }
+
+  function formatModalDate(dateStr) {
+    return new Date(dateStr).toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
+  const modal = document.getElementById('invoice-modal');
+  const backdrop = document.getElementById('invoice-modal-backdrop');
+  const closeBtn = document.getElementById('close-invoice-modal');
+
+  function openModal(invoiceData) {
+    const inv = invoiceData;
+    const isCredit = inv.type === 'credit_note';
+
+    // Title
+    document.getElementById('modal-title').textContent = isCredit ? 'Nota de Abono' : 'Factura';
+    document.getElementById('modal-number').textContent = inv.number;
+
+    // Customer
+    document.getElementById('modal-customer-name').textContent = inv.customer_name;
+    document.getElementById('modal-customer-email').textContent = inv.customer_email;
+    const nifEl = document.getElementById('modal-customer-nif');
+    nifEl.textContent = inv.customer_nif ? `NIF: ${inv.customer_nif}` : '';
+
+    // Date
+    document.getElementById('modal-date').textContent = formatModalDate(inv.issued_at);
+
+    // Status
+    const statusMap = {
+      draft: { text: 'Borrador', cls: 'bg-gray-100 text-gray-700' },
+      issued: { text: 'Emitida', cls: 'bg-blue-100 text-blue-700' },
+      paid: { text: 'Pagada', cls: 'bg-emerald-100 text-emerald-700' },
+      voided: { text: 'Anulada', cls: 'bg-red-100 text-red-700' },
+    };
+    const st = statusMap[inv.status] || { text: inv.status, cls: 'bg-gray-100 text-gray-700' };
+    document.getElementById('modal-status-badge').innerHTML = `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${st.cls}">${st.text}</span>`;
+
+    // Address
+    const addrSection = document.getElementById('modal-address-section');
+    const addrEl = document.getElementById('modal-address');
+    if (inv.billing_address) {
+      const addr = typeof inv.billing_address === 'string' ? JSON.parse(inv.billing_address) : inv.billing_address;
+      addrEl.textContent = [addr.street, addr.city, addr.postal_code, addr.country].filter(Boolean).join(', ');
+      addrSection.classList.remove('hidden');
+    } else {
+      addrSection.classList.add('hidden');
+    }
+
+    // Items
+    const itemsBody = document.getElementById('modal-items');
+    itemsBody.innerHTML = '';
+    (inv.items || []).forEach(item => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td class="px-4 py-3 text-sm text-gray-900">${item.product_name}</td>
+        <td class="px-4 py-3 text-sm text-center text-gray-600">${item.quantity}</td>
+        <td class="px-4 py-3 text-sm text-right text-gray-600">${formatCents(item.unit_price)}</td>
+        <td class="px-4 py-3 text-sm text-right font-medium ${isCredit ? 'text-red-600' : 'text-gray-900'}">${formatCents(item.total_price)}</td>
+      `;
+      itemsBody.appendChild(row);
+    });
+
+    if (!inv.items || inv.items.length === 0) {
+      itemsBody.innerHTML = '<tr><td colspan="4" class="px-4 py-6 text-center text-sm text-gray-400">Sin líneas de detalle</td></tr>';
+    }
+
+    // Totals
+    const totalColor = isCredit ? 'text-red-600' : 'text-emerald-600';
+    document.getElementById('modal-subtotal').textContent = formatCents(inv.subtotal);
+    document.getElementById('modal-subtotal').className = `font-medium ${isCredit ? 'text-red-600' : ''}`;
+    
+    document.getElementById('modal-shipping').textContent = formatCents(inv.shipping_cost || 0);
+    document.getElementById('modal-shipping').className = `font-medium ${isCredit ? 'text-red-600' : ''}`;
+
+    const discountRow = document.getElementById('modal-discount-row');
+    if (inv.discount_amount && inv.discount_amount !== 0) {
+      document.getElementById('modal-discount').textContent = '-' + formatCents(Math.abs(inv.discount_amount));
+      discountRow.classList.remove('hidden');
+    } else {
+      discountRow.classList.add('hidden');
+    }
+
+    document.getElementById('modal-tax-rate').textContent = inv.tax_rate;
+    document.getElementById('modal-tax').textContent = formatCents(inv.tax_amount);
+    document.getElementById('modal-tax').className = `font-medium ${isCredit ? 'text-red-600' : ''}`;
+
+    document.getElementById('modal-total').textContent = formatCents(inv.total);
+    document.getElementById('modal-total').className = `text-base font-bold ${totalColor}`;
+
+    // Notes
+    const notesSection = document.getElementById('modal-notes-section');
+    const notesEl = document.getElementById('modal-notes');
+    if (inv.notes) {
+      notesEl.textContent = inv.notes;
+      notesSection.classList.remove('hidden');
+    } else {
+      notesSection.classList.add('hidden');
+    }
+
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  // Event listeners
+  document.querySelectorAll('.invoice-detail-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      try {
+        const data = JSON.parse(btn.getAttribute('data-invoice'));
+        openModal(data);
+      } catch (e) {
+        console.error('Error parsing invoice data:', e);
+      }
+    });
+  });
+
+  closeBtn?.addEventListener('click', closeModal);
+  backdrop?.addEventListener('click', closeModal);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+      closeModal();
+    }
+  });
+</script>

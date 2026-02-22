@@ -43,6 +43,7 @@ const navItems = [
   { href: '/admin/productos', label: 'Productos', icon: 'box', description: 'Gestionar catálogo' },
   { href: '/admin/categorias', label: 'Categorías', icon: 'folder', description: 'Organizar productos' },
   { href: '/admin/pedidos', label: 'Pedidos', icon: 'shopping-bag', description: 'Ver ventas' },
+  { href: '/admin/facturas', label: 'Facturas', icon: 'receipt', description: 'Facturas y abonos' },
   { href: '/admin/descuentos', label: 'Descuentos', icon: 'tag', description: 'Códigos promocionales' },
   { href: '/admin/configuracion', label: 'Configuración', icon: 'settings', description: 'Ajustes' },
 ];
@@ -116,6 +117,11 @@ const isActive = (href: string) => {
               {item.icon === 'shopping-bag' && (
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
+              )}
+              {item.icon === 'receipt' && (
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
                 </svg>
               )}
               {item.icon === 'tag' && (
@@ -222,6 +228,11 @@ const isActive = (href: string) => {
               {item.icon === 'shopping-bag' && (
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
+              )}
+              {item.icon === 'receipt' && (
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
                 </svg>
               )}
               {item.icon === 'tag' && (

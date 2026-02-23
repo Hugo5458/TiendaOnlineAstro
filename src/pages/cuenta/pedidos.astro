@@ -15,20 +15,31 @@ let orders: any[] = [];
 let userEmail = '';
 
 if (isSupabaseConfigured() && authToken) {
-  const { data: { user } } = await supabase.auth.getUser(authToken);
-  userEmail = user?.email || '';
-  
-  if (userEmail) {
-    const serverClient = createServerClient();
-    const { data, error } = await serverClient
-      .from('orders')
-      .select('*, order_items(*)')
-      .eq('customer_email', userEmail)
-      .order('created_at', { ascending: false });
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser(authToken);
+    if (userError) throw userError;
     
-    if (!error && data) {
-      orders = data;
+    userEmail = user?.email || '';
+    
+    if (userEmail) {
+      const serverClient = createServerClient();
+      console.log(`[Pedidos] Buscando pedidos para: ${userEmail}`);
+      
+      const { data, error: ordersError } = await serverClient
+        .from('orders')
+        .select('*, order_items(*)')
+        .ilike('customer_email', userEmail) // Búsqueda insensible a mayúsculas
+        .order('created_at', { ascending: false });
+      
+      if (ordersError) throw ordersError;
+      
+      if (data) {
+        orders = data;
+        console.log(`[Pedidos] Encontrados ${data.length} pedidos.`);
+      }
     }
+  } catch (e: any) {
+    console.error('[Pedidos] Error cargando pedidos:', e.message);
   }
 } else {
   // Demo orders
@@ -182,7 +193,10 @@ function canRequestReturn(status: string): boolean {
             <svg class="w-16 h-16 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
           </div>
           <h2 class="text-3xl font-serif font-bold text-primary-950 mb-3">Sin pedidos aún</h2>
-          <p class="text-primary-700 mb-8 text-lg">Realiza tu primera compra para ver el historial aquí.</p>
+          <p class="text-primary-700 mb-2 text-lg">Realiza tu primera compra para ver el historial aquí.</p>
+          {userEmail && (
+            <p class="text-xs text-primary-400 mb-8 italic">Pista: Buscando pedidos para {userEmail}</p>
+          )}
           <Button href="/productos" variant="secondary" size="lg" class="shadow-lg">
             Explorar tienda
           </Button>

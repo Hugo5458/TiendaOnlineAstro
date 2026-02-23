@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import Stripe from 'stripe';
 import { createServerClient } from '../../lib/supabase';
+import { sendOrderConfirmationEmail } from '../../lib/email';
 
 const stripe = new Stripe(import.meta.env.STRIPE_SECRET_KEY || '', {
     apiVersion: '2023-10-16' as any,
@@ -88,11 +89,35 @@ export const POST: APIRoute = async ({ request }) => {
                 else addLog(`✅ Stock bajado para ${item.id}.`);
             }
 
-            // 3. EMAIL
-            if (data || !rpcError) {
-                addLog('📧 Intentando enviar email...');
-                // ... el código del email se mantiene igual ...
-                addLog('✅ Proceso de email lanzado');
+            // 3. Enviar email (AWAIT para ver errores en Stripe)
+            try {
+                const customerEmail = session.customer_details?.email;
+                if (!customerEmail) throw new Error('No hay email del cliente');
+
+                addLog(`📧 Preparando email para: ${customerEmail}`);
+
+                const orderDetails = {
+                    orderNumber: `FS-${new Date().getTime().toString().slice(-4)}`, // Temporal si no tenemos el ID
+                    customerName: metadata.customerName || session.customer_details?.name || 'Cliente',
+                    customerEmail: customerEmail,
+                    items: items.map((i: any) => ({
+                        name: i.name || 'Producto',
+                        quantity: i.quantity,
+                        price: i.price,
+                        total: (i.price * i.quantity)
+                    })),
+                    subtotal: (session.amount_subtotal || 0),
+                    shipping: (session.total_details?.amount_shipping || 0),
+                    tax: (session.total_details?.amount_tax || 0),
+                    total: (session.amount_total || 0),
+                    shippingAddress: (session as any).shipping_details?.address || {},
+                    date: new Date().toISOString()
+                };
+
+                await sendOrderConfirmationEmail(orderDetails);
+                addLog('✅ Email enviado correctamente.');
+            } catch (emailErr: any) {
+                addLog(`❌ ERROR EMAIL: ${emailErr.message}`);
             }
         }
 

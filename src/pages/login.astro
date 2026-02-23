@@ -235,11 +235,9 @@ if (Astro.request.method === 'POST') {
         originalText = googleBtn.textContent;
         googleBtn.textContent = 'Conectando...';
 
-        const primaryRedirectTo = new URL('/auth/callback', window.location.origin).toString();
-        const envSiteUrl = import.meta.env.PUBLIC_SITE_URL;
-        const fallbackRedirectTo = envSiteUrl
-          ? new URL('/auth/callback', envSiteUrl).toString()
-          : null;
+        const envSiteUrl = import.meta.env.PUBLIC_SITE_URL || 'https://yoowww00g84ok88ww4os08o0.victoriafp.online';
+        const primaryRedirectTo = new URL('/auth/callback', envSiteUrl).toString();
+        const fallbackRedirectTo = null;
 
         const startOAuth = async (redirectTo: string) => {
           return supabase.auth.signInWithOAuth({

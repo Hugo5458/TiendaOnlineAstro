@@ -18,7 +18,7 @@ if (Astro.request.method === 'POST') {
       
       // Usar cliente admin para generar el link sin enviar correo por Supabase
       const supabaseAdmin = createServerClient();
-      const siteUrl = import.meta.env.PUBLIC_SITE_URL || Astro.url.origin;
+      const siteUrl = import.meta.env.PUBLIC_SITE_URL || Astro.site?.origin || 'https://yoowww00g84ok88ww4os08o0.victoriafp.online';
 
       const { data, error: generateError } = await supabaseAdmin.auth.admin.generateLink({
         type: 'recovery',

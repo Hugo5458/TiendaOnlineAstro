@@ -11,7 +11,7 @@ const {
   image = '/og-image.jpg'
 } = Astro.props;
 
-const canonicalURL = new URL(Astro.url.pathname, Astro.site || Astro.url.origin);
+const canonicalURL = new URL(Astro.url.pathname, Astro.site || import.meta.env.PUBLIC_SITE_URL || 'https://yoowww00g84ok88ww4os08o0.victoriafp.online');
 ---
 
 <!DOCTYPE html>

@@ -5,13 +5,15 @@ interface Props {
   image?: string;
 }
 
-const { 
-  title, 
-  description = 'FashionStore - Tu tienda de moda online. Descubre las últimas tendencias para hombre y mujer.',
-  image = '/og-image.jpg'
-} = Astro.props;
+import { SITE_URL } from '../lib/constants';
 
-const canonicalURL = new URL(Astro.url.pathname, Astro.site || import.meta.env.PUBLIC_SITE_URL || 'https://yoowww00g84ok88ww4os08o0.victoriafp.online');
+const { 
+  title = 'FashionStore | Moda Premium',
+  description = 'Descubre las últimas tendencias en moda premium. Ropa exclusiva de alta calidad para hombre y mujer.',
+  image = '/og-image.jpg'
+ } = Astro.props;
+
+const canonicalURL = new URL(Astro.url.pathname, Astro.site || SITE_URL);
 ---
 
 <!DOCTYPE html>

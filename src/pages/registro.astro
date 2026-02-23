@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Button from '../components/ui/Button.astro';
+import { SITE_URL } from '../lib/constants';
 
 export const prerender = false;
 
@@ -56,10 +57,7 @@ if (Astro.request.method === 'POST') {
       if (existingUser) {
         error = 'Este nombre de usuario ya está en uso';
       } else {
-        // Build the redirect URL using the real site domain (never localhost)
-        const siteUrl = import.meta.env.PUBLIC_SITE_URL 
-          || Astro.site?.origin 
-          || 'https://yoowww00g84ok88ww4os08o0.victoriafp.online';
+        const siteUrl = SITE_URL;
 
         // Create user
         const { data, error: signUpError } = await supabase.auth.signUp({
@@ -376,6 +374,7 @@ if (Astro.request.method === 'POST') {
 
 <script>
   import { createClient } from '@supabase/supabase-js';
+  import { SITE_URL } from '../lib/constants';
 
   const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
   const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
@@ -409,8 +408,7 @@ if (Astro.request.method === 'POST') {
         originalText = googleBtn.textContent;
         googleBtn.textContent = 'Conectando...';
 
-        const envSiteUrl = import.meta.env.PUBLIC_SITE_URL || 'https://yoowww00g84ok88ww4os08o0.victoriafp.online';
-        const primaryRedirectTo = new URL('/auth/callback', envSiteUrl).toString();
+        const primaryRedirectTo = new URL('/auth/callback', SITE_URL).toString();
         const fallbackRedirectTo = null;
 
         const startOAuth = async (redirectTo: string) => {

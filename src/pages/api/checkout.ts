@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import Stripe from 'stripe';
 import { supabase } from '../../lib/supabase';
+import { SITE_URL } from '../../lib/constants';
 
 const stripe = new Stripe(import.meta.env.STRIPE_SECRET_KEY || '', {
     apiVersion: '2023-10-16' as any,
@@ -76,22 +77,17 @@ export const POST: APIRoute = async ({ request, redirect }) => {
             }
         }
 
+        const siteUrl = SITE_URL;
+
         // Create Stripe Checkout Session
-        // Incluye los métodos de pago más populares en España
         const session = await stripe.checkout.sessions.create({
-            // Métodos de pago habilitados:
-            // - card: Tarjetas de crédito/débito (incluye Google Pay, Apple Pay automáticamente)
-            // - paypal: Pagos con PayPal
-            payment_method_types: [
-                'card',
-                'paypal',
-            ],
+            payment_method_types: ['card', 'paypal'],
             line_items: lineItems,
             discounts: discounts.length > 0 ? discounts : undefined,
             mode: 'payment',
             ...(customerEmail ? { customer_email: customerEmail } : {}),
-            success_url: `${import.meta.env.PUBLIC_SITE_URL}/pedido/exito?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${import.meta.env.PUBLIC_SITE_URL}/pedido/cancelado`,
+            success_url: `${siteUrl}/pedido/exito?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${siteUrl}/pedido/cancelado`,
             shipping_address_collection: {
                 allowed_countries: ['ES'],
             },

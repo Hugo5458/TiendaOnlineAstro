@@ -207,6 +207,7 @@ if (Astro.request.method === 'POST') {
 
 <script>
   import { supabase } from '../lib/supabase';
+  import { SITE_URL } from '../lib/constants';
 
   const initGoogleLogin = () => {
     const googleBtn = document.getElementById('google-login-btn') as HTMLButtonElement | null;
@@ -235,8 +236,7 @@ if (Astro.request.method === 'POST') {
         originalText = googleBtn.textContent;
         googleBtn.textContent = 'Conectando...';
 
-        const envSiteUrl = import.meta.env.PUBLIC_SITE_URL || 'https://yoowww00g84ok88ww4os08o0.victoriafp.online';
-        const primaryRedirectTo = new URL('/auth/callback', envSiteUrl).toString();
+        const primaryRedirectTo = new URL('/auth/callback', SITE_URL).toString();
         const fallbackRedirectTo = null;
 
         const startOAuth = async (redirectTo: string) => {

@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE_URL } from '../lib/constants';
 import Button from '../components/ui/Button.astro';
 
 export const prerender = false;
@@ -16,9 +17,8 @@ if (Astro.request.method === 'POST') {
       const { createServerClient } = await import('../lib/supabase');
       const { sendPasswordResetEmail } = await import('../lib/email');
       
-      // Usar cliente admin para generar el link sin enviar correo por Supabase
+      const siteUrl = SITE_URL;
       const supabaseAdmin = createServerClient();
-      const siteUrl = import.meta.env.PUBLIC_SITE_URL || Astro.site?.origin || 'https://yoowww00g84ok88ww4os08o0.victoriafp.online';
 
       const { data, error: generateError } = await supabaseAdmin.auth.admin.generateLink({
         type: 'recovery',

@@ -1,8 +1,9 @@
 /**
  * Constantes globales de la aplicación
- * Aquí definimos la URL oficial del sitio para evitar el uso de 'localhost' en producción.
+ * Forzamos la URL de producción para evitar redirecciones a localhost.
  */
 
-export const SITE_URL = import.meta.env.PUBLIC_SITE_URL || 'https://yoowww00g84ok88ww4os08o0.victoriafp.online';
+// Priorizamos la URL real del despliegue sobre cualquier variable de entorno local
+export const SITE_URL = 'https://yoowww00g84ok88ww4os08o0.victoriafp.online';
 
 export const ADMIN_EMAILS = ['hugodelmoral77@gmail.com', 'admin@fashionstore.com'];

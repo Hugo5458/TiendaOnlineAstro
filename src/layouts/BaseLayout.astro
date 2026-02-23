@@ -51,6 +51,15 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site || SITE_URL);
   </head>
   <body class="min-h-screen bg-white text-black font-sans antialiased">
     <slot />
+    <script is:inline>
+      // Safety redirect: If the page loads on localhost but we are in production
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        const isDev = window.location.port === '4321'; // Simple check to allow local development
+        if (!isDev) {
+          window.location.replace('https://yoowww00g84ok88ww4os08o0.victoriafp.online' + window.location.pathname + window.location.search);
+        }
+      }
+    </script>
   </body>
 </html>
 

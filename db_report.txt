@@ -1,0 +1,38 @@
+=== CATEGORIAS ===
+accesorios | Accesorios | parent_id: NULL | id: 1f8ffafa-447f-4202-8bcb-011beef74d82
+blusas | Blusas | parent_id: NULL | id: 2f1011d3-3166-4dbd-a9e5-c055b7b9691e
+calzado-hombre | Calzado Hombre | parent_id: NULL | id: 7ce57553-f6de-401a-a900-9d6ab919f878
+calzado-mujer | Calzado Mujer | parent_id: NULL | id: b5b0d9b2-ac0e-4d1a-84af-88227a574f0d
+camisas | Camisas | parent_id: NULL | id: 3d439ca4-029d-4e4b-9054-aa30650181fa
+camisas-hombre | Camisas Hombre | parent_id: NULL | id: c6469ad8-84d0-4cb3-bbd9-71c07d436afb
+camisetas | Camisetas | parent_id: NULL | id: 8052fca8-0671-4fc2-ad29-62fd6f57e5d4
+chalecos | Chalecos | parent_id: NULL | id: 943b6ba3-2add-4f1d-a454-e078bd9df9e5
+faldas | Faldas | parent_id: NULL | id: 136f6de3-6c68-453b-a4ae-2872ef8b60e9
+hombre | Hombre | parent_id: NULL | id: 8ff3732c-5f04-4c61-a63b-d789663881fd
+mujer | Mujer | parent_id: NULL | id: 3547afac-f6db-49bc-8b0e-dd7fa1866c21
+pantalones | Pantalones | parent_id: NULL | id: d8c8fcfc-efaa-414f-862d-aedfd912307e
+pantalones-hombre | Pantalones Hombre | parent_id: NULL | id: d2efdd39-328f-4cf5-88f8-ddd68aa89b19
+trajes | Trajes | parent_id: NULL | id: f3b1e301-4913-46c6-8d8b-78a28f6ab680
+vestidos | Vestidos | parent_id: NULL | id: d87e90f3-743e-4d70-812b-0f8b3b01fa13
+
+=== PRODUCTOS ===
+Blazer Casual Gris | slug: blazer-casual-gris | cat: Trajes (trajes) | active: true
+Blusa Romántica Blanca | slug: blusa-romantica-blanca | cat: Blusas (blusas) | active: true
+Blusa Satén Champagne | slug: blusa-saten-champagne | cat: Blusas (blusas) | active: true
+Bolso Tote Cuero | slug: bolso-tote-cuero | cat: Accesorios (accesorios) | active: true
+Camisa Lino Blanca | slug: camisa-lino-blanca | cat: Camisas (camisas) | active: true
+Camisa Oxford Azul | slug: camisa-oxford-azul | cat: Camisas (camisas) | active: true
+Camiseta Básica Negra | slug: camiseta-basica-negra | cat: Camisetas (camisetas) | active: true
+Chaleco de Punto Gris | slug: chaleco-punto-gris | cat: Chalecos (chalecos) | active: true
+Chaqueta Piel Negra | slug: chaqueta-piel-negra | cat: Vestidos (vestidos) | active: true
+Falda Plisada Midi | slug: falda-plisada-midi | cat: Faldas (faldas) | active: true
+Pantalón Chino Beige | slug: pantalon-chino-beige | cat: Pantalones (pantalones) | active: true
+Polo Premium Algodón | slug: polo-premium-algodon | cat: Camisas Hombre (camisas-hombre) | active: true
+Sandalias Elegantes Doradas | slug: sandalias-doradas | cat: Calzado Mujer (calzado-mujer) | active: true
+Sneakers Cuero Blanco | slug: sneakers-cuero-blanco | cat: Calzado Hombre (calzado-hombre) | active: true
+Stilettos Rojos Pasión | slug: stilettos-rojos | cat: Calzado Mujer (calzado-mujer) | active: true
+Traje Azul Marino | slug: traje-azul-marino | cat: Trajes (trajes) | active: true
+Vestido Cóctel Rosa | slug: vestido-coctel-rosa | cat: Vestidos (vestidos) | active: true
+Vestido Midi Floral | slug: vestido-midi-floral | cat: Vestidos (vestidos) | active: true
+Vestido Negro Elegante | slug: vestido-negro-elegante | cat: Vestidos (vestidos) | active: true
+Zapatos Derby Cuero | slug: zapatos-derby-cuero | cat: Calzado Hombre (calzado-hombre) | active: true

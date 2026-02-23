@@ -1,0 +1,38 @@
+=== CATEGORÍAS (con parent_id) ===
+  accesorios           | Accesorios             | padre: Mujer
+  blusas               | Blusas                 | padre: Mujer
+  calzado-hombre       | Calzado Hombre         | padre: Hombre
+  calzado-mujer        | Calzado Mujer          | padre: Mujer
+  camisas              | Camisas                | padre: Hombre
+  camisas-hombre       | Camisas Hombre         | padre: Hombre
+  camisetas            | Camisetas              | padre: Hombre
+  chalecos             | Chalecos               | padre: Hombre
+  faldas               | Faldas                 | padre: Mujer
+  hombre               | Hombre                 | padre: RAÍZ
+  mujer                | Mujer                  | padre: RAÍZ
+  pantalones           | Pantalones             | padre: Hombre
+  pantalones-hombre    | Pantalones Hombre      | padre: Hombre
+  trajes               | Trajes                 | padre: Hombre
+  vestidos             | Vestidos               | padre: Mujer
+
+=== PRODUCTOS (con categoría y padre) ===
+  Blazer Casual Gris             | Hombre > Trajes | ✓ img
+  Blusa Romántica Blanca         | Mujer > Blusas | ✓ img
+  Blusa Satén Champagne          | Mujer > Blusas | ✓ img
+  Bolso Tote Cuero               | Mujer > Accesorios | ✓ img
+  Camisa Lino Blanca             | Hombre > Camisas Hombre | ✓ img
+  Camisa Oxford Azul             | Hombre > Camisas Hombre | ✓ img
+  Camiseta Básica Negra          | Hombre > Camisetas | ✓ img
+  Chaleco de Punto Gris          | Hombre > Chalecos | ✓ img
+  Chaqueta Piel Negra            | Mujer > Vestidos | ✓ img
+  Falda Plisada Midi             | Mujer > Faldas | ✓ img
+  Pantalón Chino Beige           | Hombre > Pantalones Hombre | ✓ img
+  Polo Premium Algodón           | Hombre > Camisas Hombre | ✓ img
+  Sandalias Elegantes Doradas    | Mujer > Calzado Mujer | ✓ img
+  Sneakers Cuero Blanco          | Hombre > Calzado Hombre | ✓ img
+  Stilettos Rojos Pasión         | Mujer > Calzado Mujer | ✓ img
+  Traje Azul Marino              | Hombre > Trajes | ✓ img
+  Vestido Cóctel Rosa            | Mujer > Vestidos | ✓ img
+  Vestido Midi Floral            | Mujer > Vestidos | ✓ img
+  Vestido Negro Elegante         | Mujer > Vestidos | ✓ img
+  Zapatos Derby Cuero            | Hombre > Calzado Hombre | ✓ img

@@ -447,18 +447,22 @@ const isOAuthUser = user?.app_metadata?.provider && user.app_metadata.provider !
   // Handle logout from seguridad page sidebar
   document.getElementById('seguridad-logout-btn')?.addEventListener('click', async () => {
     try {
+      const { supabase } = await import('../../lib/supabase');
+      await supabase.auth.signOut();
+    } catch (e) { console.error('Client signOut error:', e); }
+
+    try {
       const response = await fetch('/api/auth/customer-logout', { method: 'POST' });
       await response.json();
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      localStorage.removeItem('fashionstore-user');
-      for (const key of Object.keys(localStorage)) {
-        if (key.startsWith('sb-') || key.includes('supabase')) {
-          localStorage.removeItem(key);
-        }
-      }
-      window.location.href = '/';
-    }
+    } catch (error) { console.error('Logout API error:', error); }
+
+    localStorage.removeItem('fashionstore-user');
+    Object.keys(localStorage).filter(
+      key => key.startsWith('sb-') || key.includes('supabase') || key.includes('auth')
+    ).forEach(key => localStorage.removeItem(key));
+
+    document.cookie = 'sb-access-token=; Max-Age=0; path=/;';
+    document.cookie = 'sb-refresh-token=; Max-Age=0; path=/;';
+    window.location.href = '/';
   });
 </script>

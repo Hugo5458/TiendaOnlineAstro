@@ -137,9 +137,9 @@ const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== '
                   Direcciones
                 </a>
                 <div class="border-t border-gray-100 my-2"></div>
-                <button id="logout-btn" class="w-full text-left px-6 py-3 text-xs uppercase tracking-widest hover:bg-gray-50 transition-colors">
+                <a href="/logout" class="block px-6 py-3 text-xs uppercase tracking-widest hover:bg-gray-50 transition-colors">
                   Cerrar Sesión
-                </button>
+                </a>
               </div>
             </div>
           </div>
@@ -292,7 +292,7 @@ const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== '
           // Always hide admin link first for safety
           if (adminLink) adminLink.style.display = 'none';
 
-          if (isUserLoggedIn) {
+          if (isUserLoggedIn && isLoggedIn) {
             let user = {};
             if (localStorageUser) {
                try { user = JSON.parse(localStorageUser); } catch(e) {}
@@ -306,9 +306,14 @@ const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== '
               adminLink.style.display = 'block';
             }
           } else {
-            // Not logged in: show guest menu, hide logged-in menu
+            // Not logged in or mismatch: show guest menu, hide logged-in menu
             if (guestMenu) guestMenu.classList.remove('hidden');
             if (loggedInMenu) loggedInMenu.classList.add('hidden');
+            
+            // If server says no cookie but local has data, clear it to stay in sync
+            if (!isLoggedIn && localStorageUser) {
+              localStorage.removeItem('fashionstore-user');
+            }
           }
         } catch (e) {
           console.error('Auth check error:', e);
@@ -468,7 +473,6 @@ const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== '
   function initUserMenu() {
     const userMenuButton = document.getElementById('user-menu-button');
     const userDropdown = document.getElementById('user-dropdown');
-    const logoutBtn = document.getElementById('logout-btn');
 
     userMenuButton?.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -479,38 +483,6 @@ const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== '
       if (userDropdown && !userDropdown.contains(e.target as Node) && e.target !== userMenuButton) {
         userDropdown.classList.add('hidden');
       }
-    });
-
-    logoutBtn?.addEventListener('click', async () => {
-      try {
-        // 1. Sign out from Supabase client-side
-        const { supabase } = await import('../lib/supabase');
-        await supabase.auth.signOut();
-      } catch (e) {
-        console.error('Client signOut error:', e);
-      }
-      
-      try {
-        // 2. Sign out from server (clears cookies + server session)
-        const response = await fetch('/api/auth/customer-logout', { method: 'POST' });
-        await response.json();
-      } catch (error) {
-        console.error('Logout API error:', error);
-      }
-
-      // 3. Clear ALL auth-related localStorage items
-      localStorage.removeItem('fashionstore-user');
-      const keysToRemove = Object.keys(localStorage).filter(
-        key => key.startsWith('sb-') || key.includes('supabase') || key.includes('auth')
-      );
-      keysToRemove.forEach(key => localStorage.removeItem(key));
-
-      // 4. Clear cookies from client side as final fallback
-      document.cookie = 'sb-access-token=; Max-Age=0; path=/;';
-      document.cookie = 'sb-refresh-token=; Max-Age=0; path=/;';
-
-      // 5. Redirect
-      window.location.href = '/';
     });
   }
 

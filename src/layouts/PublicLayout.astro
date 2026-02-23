@@ -484,11 +484,18 @@ const subCategories = categories.filter(c => c.slug !== 'hombre' && c.slug !== '
     logoutBtn?.addEventListener('click', async () => {
       try {
         const response = await fetch('/api/auth/customer-logout', { method: 'POST' });
-        localStorage.removeItem('fashionstore-user');
-        window.location.href = '/';
+        await response.json(); // Wait for the response to ensure cookies are cleared
       } catch (error) {
         console.error('Logout error:', error);
+      } finally {
+        // Always clear all auth-related localStorage items
         localStorage.removeItem('fashionstore-user');
+        // Clear any Supabase auth keys that might persist
+        for (const key of Object.keys(localStorage)) {
+          if (key.startsWith('sb-') || key.includes('supabase')) {
+            localStorage.removeItem(key);
+          }
+        }
         window.location.href = '/';
       }
     });

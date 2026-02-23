@@ -180,14 +180,12 @@ if (Astro.request.method === 'POST') {
 
             <hr class="border-primary-200/50" />
 
-            <form action="/api/auth/customer-logout" method="POST" class="block w-full">
-              <button type="submit" class="w-full flex items-center gap-3 px-6 py-4 text-danger-600 hover:bg-danger-50 border-l-4 border-transparent hover:border-danger-300 transition-all font-medium">
+            <button type="button" id="cuenta-logout-btn" class="w-full flex items-center gap-3 px-6 py-4 text-danger-600 hover:bg-danger-50 border-l-4 border-transparent hover:border-danger-300 transition-all font-medium">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
                 Cerrar Sesión
               </button>
-            </form>
           </nav>
         </div>
         
@@ -405,8 +403,21 @@ if (Astro.request.method === 'POST') {
 </script>
 
 <script>
-  // Clear localStorage on logout form submit
-  document.querySelector('form[action="/api/auth/customer-logout"]')?.addEventListener('submit', () => {
-    localStorage.removeItem('fashionstore-user');
+  // Handle logout from cuenta page sidebar
+  document.getElementById('cuenta-logout-btn')?.addEventListener('click', async () => {
+    try {
+      const response = await fetch('/api/auth/customer-logout', { method: 'POST' });
+      await response.json();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      localStorage.removeItem('fashionstore-user');
+      for (const key of Object.keys(localStorage)) {
+        if (key.startsWith('sb-') || key.includes('supabase')) {
+          localStorage.removeItem(key);
+        }
+      }
+      window.location.href = '/';
+    }
   });
 </script>

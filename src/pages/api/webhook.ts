@@ -21,7 +21,7 @@ export const POST: APIRoute = async ({ request }) => {
         const event = stripe.webhooks.constructEvent(
             body,
             signature,
-            import.meta.env.STRIPE_WEBHOOK_SECRET || ''
+            import.meta.env.STRIPE_WEBHOOK_SECRET || 'whsec_jknLiWO28KCHFPtCEuy0DElIst1LmM9B'
         );
 
         if (event.type === 'checkout.session.completed') {
@@ -49,70 +49,70 @@ export const POST: APIRoute = async ({ request }) => {
                     country: shipping?.country,
                 };
 
-                console.log('--- WEBHOOK: Procesando Pago ---');
+                console.log('--- WEBHOOK: Iniciando Procesamiento ---');
 
-                // 1. Intentar procesar pedido vía RPC (Base de datos)
-                const { data: orderId, error: rpcError } = await supabaseAdmin.rpc('process_order', {
-                    p_customer_email: customerEmail,
-                    p_customer_name: customerName,
-                    p_customer_phone: customerPhone,
-                    p_shipping_address: shippingAddress,
-                    p_items: items.map((i: any) => ({
-                        product_id: i.id,
-                        quantity: i.quantity,
-                        size: i.size,
-                        color: i.color || null
-                    })),
-                    p_shipping_cost: session.total_details?.amount_shipping || 0,
-                    p_tax: session.total_details?.amount_tax || 0,
-                    p_discount_amount: discountAmount,
-                    p_discount_code: discountCode,
-                    p_payment_intent_id: session.payment_intent as string,
-                    p_total: session.amount_total || 0
-                });
+                // TAREA 1: CREAR EL PEDIDO EN LA BASE DE DATOS
+                let orderId = null;
+                try {
+                    const { data, error: rpcError } = await supabaseAdmin.rpc('process_order', {
+                        p_customer_email: customerEmail,
+                        p_customer_name: customerName,
+                        p_customer_phone: customerPhone,
+                        p_shipping_address: shippingAddress,
+                        p_items: items.map((i: any) => ({
+                            product_id: i.id,
+                            quantity: i.quantity,
+                            size: i.size,
+                            color: i.color || null
+                        })),
+                        p_shipping_cost: session.total_details?.amount_shipping || 0,
+                        p_tax: session.total_details?.amount_tax || 0,
+                        p_discount_amount: discountAmount,
+                        p_discount_code: discountCode,
+                        p_payment_intent_id: session.payment_intent as string,
+                        p_total: session.amount_total || 0
+                    });
 
-                if (rpcError) {
-                    console.error('Error en RPC process_order:', rpcError.message);
-                    // Si el RPC falla, NO nos detenemos, intentamos marcar como pagado lo que haya
+                    if (rpcError) {
+                        console.error('⚠ Error en RPC process_order (el pedido no se guardó en DB):', rpcError.message);
+                    } else {
+                        orderId = data;
+                        console.log('✓ Pedido registrado en DB:', orderId);
+                    }
+                } catch (dbErr) {
+                    console.error('❌ Error crítico al conectar con DB para crear pedido:', dbErr);
                 }
 
-                const finalOrderId = orderId;
-                if (!finalOrderId) {
-                    console.error('No se pudo obtener el ID del pedido. Abortando stock y email.');
-                } else {
-                    // 2. DESCUENTO DE STOCK MANUAL (Failsafe)
-                    // Hacemos esto para asegurarnos al 100% de que el stock baja
-                    console.log('Restando stock manualmente para asegurar...');
-                    for (const item of items) {
-                        try {
-                            const { data: prod } = await supabaseAdmin.from('products').select('stock').eq('id', item.id).single();
-                            if (prod) {
-                                await supabaseAdmin.from('products').update({
-                                    stock: Math.max(0, prod.stock - item.quantity)
-                                }).eq('id', item.id);
-                            }
-                        } catch (sErr) {
-                            console.error('Error restando stock item:', item.id, sErr);
+                // TAREA 2: BAJAR EL STOCK (SE HACE SIEMPRE, AUNQUE FALLE LA DB ANTERIOR)
+                console.log('--- WEBHOOK: Bajando Stock ---');
+                for (const item of items) {
+                    try {
+                        const { data: prod, error: fetchErr } = await supabaseAdmin.from('products').select('stock').eq('id', item.id).single();
+                        if (!fetchErr && prod) {
+                            const newStock = Math.max(0, prod.stock - item.quantity);
+                            await supabaseAdmin.from('products').update({ stock: newStock }).eq('id', item.id);
+                            console.log(`✓ Stock actualizado para ${item.id}: ${prod.stock} -> ${newStock}`);
+                        } else {
+                            console.error(`❌ Error al obtener stock para ${item.id}:`, fetchErr);
                         }
+                    } catch (sErr) {
+                        console.error(`❌ Excepción al restar stock para ${item.id}:`, sErr);
+                    }
+                }
+
+                // TAREA 3: GENERAR FACTURA Y ENVIAR EMAIL
+                if (orderId) {
+                    try {
+                        await supabaseAdmin.rpc('generate_invoice', { p_order_id: orderId });
+                    } catch (invErr) {
+                        console.error('⚠ Falló generación automática de factura:', invErr);
                     }
 
-                    // 3. ACTUALIZAR ESTADO DE PAGO (Por si el RPC no lo hizo)
-                    await supabaseAdmin.from('orders').update({
-                        payment_status: 'paid',
-                        status: 'processing',
-                        payment_intent_id: session.payment_intent as string
-                    }).eq('id', finalOrderId);
-
-                    // 4. GENERAR FACTURA
-                    const { error: invoiceError } = await supabaseAdmin.rpc('generate_invoice', { p_order_id: finalOrderId });
-                    if (invoiceError) console.error('Error factura:', invoiceError.message);
-
-                    // 5. ENVIAR EMAIL (En segundo plano)
                     (async () => {
                         try {
                             const { sendOrderConfirmationEmail } = await import('../../lib/email');
-                            const { data: orderData } = await supabaseAdmin.from('orders').select('*').eq('id', finalOrderId).single();
-                            const { data: orderItems } = await supabaseAdmin.from('order_items').select('*').eq('order_id', finalOrderId);
+                            const { data: orderData } = await supabaseAdmin.from('orders').select('*').eq('id', orderId).single();
+                            const { data: orderItems } = await supabaseAdmin.from('order_items').select('*').eq('order_id', orderId);
 
                             if (orderData && orderItems) {
                                 await sendOrderConfirmationEmail({
@@ -133,12 +133,14 @@ export const POST: APIRoute = async ({ request }) => {
                                     shippingAddress: orderData.shipping_address,
                                     date: orderData.created_at
                                 });
-                                console.log('✓ Email enviado para pedido:', orderData.order_number);
+                                console.log('✓ Email de confirmación enviado.');
                             }
                         } catch (e) {
-                            console.error('Fallo envío email:', e);
+                            console.error('❌ Error en proceso de envío de email:', e);
                         }
                     })();
+                } else {
+                    console.log('⚠ No se envía email porque el pedido no se registró en la base de datos.');
                 }
             }
         }

@@ -7,14 +7,7 @@ import SizeRecommender from '../../components/islands/SizeRecommender';
 import { getProducts, getProductBySlug } from '../../lib/supabase';
 import { formatPrice, calculateDiscount, getStockStatus } from '../../lib/utils';
 
-export const prerender = true;
-
-export async function getStaticPaths() {
-  const products = await getProducts();
-  return products.map((product) => ({
-    params: { slug: product.slug },
-  }));
-}
+export const prerender = false; // Desactivado para stock en tiempo real
 
 const { slug } = Astro.params;
 const product = await getProductBySlug(slug);

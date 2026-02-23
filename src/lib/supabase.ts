@@ -368,29 +368,16 @@ const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
 
 export async function getCategories(): Promise<Category[]> {
     if (!isSupabaseConfigured()) {
-        return demoCategories;
+        throw new Error('Supabase no está configurado (URL o Anon Key faltante)');
     }
 
-    const now = Date.now();
-    if (categoriesCache && (now - lastFetchTime < CACHE_TTL)) {
-        return categoriesCache;
-    }
+    const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
 
-    try {
-        const { data, error } = await supabase
-            .from('categories')
-            .select('*')
-            .order('name');
-
-        if (error) throw error;
-
-        categoriesCache = data || [];
-        lastFetchTime = now;
-
-        return categoriesCache;
-    } catch {
-        return demoCategories;
-    }
+    if (error) throw error;
+    return data || [];
 }
 
 export async function getProducts(options?: {
@@ -400,88 +387,64 @@ export async function getProducts(options?: {
     limit?: number;
 }): Promise<Product[]> {
     if (!isSupabaseConfigured()) {
-        let filtered = [...demoProducts];
-
-        if (options?.categorySlug) {
-            filtered = filtered.filter(p => p.category?.slug === options.categorySlug);
-        }
-        if (options?.featured) {
-            filtered = filtered.filter(p => p.is_featured);
-        }
-        if (options?.flashOffer) {
-            filtered = filtered.filter(p => p.is_flash_offer);
-        }
-        if (options?.limit) {
-            filtered = filtered.slice(0, options.limit);
-        }
-
-        return filtered;
+        throw new Error('Supabase no está configurado (URL o Anon Key faltante)');
     }
 
-    try {
-        let query = supabase
-            .from('products')
-            .select(`
-        *,
-        category:categories(*)
-      `)
-            .eq('is_active', true);
+    let query = supabase
+        .from('products')
+        .select(`
+            *,
+            category:categories(*)
+        `)
+        .eq('is_active', true);
 
-        if (options?.categorySlug) {
-            const { data: category } = await supabase
-                .from('categories')
-                .select('id')
-                .eq('slug', options.categorySlug)
-                .single();
+    if (options?.categorySlug) {
+        const { data: category } = await supabase
+            .from('categories')
+            .select('id')
+            .eq('slug', options.categorySlug)
+            .single();
 
-            if (category) {
-                query = query.eq('category_id', category.id);
-            }
+        if (category) {
+            query = query.eq('category_id', category.id);
         }
-
-        if (options?.featured) {
-            query = query.eq('is_featured', true);
-        }
-
-        if (options?.flashOffer) {
-            query = query.eq('is_flash_offer', true);
-        }
-
-        if (options?.limit) {
-            query = query.limit(options.limit);
-        }
-
-        query = query.order('created_at', { ascending: false });
-
-        const { data, error } = await query;
-        if (error) throw error;
-        return data || [];
-    } catch {
-        return demoProducts;
     }
+
+    if (options?.featured) {
+        query = query.eq('is_featured', true);
+    }
+
+    if (options?.flashOffer) {
+        query = query.eq('is_flash_offer', true);
+    }
+
+    if (options?.limit) {
+        query = query.limit(options.limit);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return (data || []) as Product[];
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {
     if (!isSupabaseConfigured()) {
-        return demoProducts.find(p => p.slug === slug) || null;
+        throw new Error('Supabase no está configurado');
     }
 
-    try {
-        const { data, error } = await supabase
-            .from('products')
-            .select(`
-        *,
-        category:categories(*)
-      `)
-            .eq('slug', slug)
-            .eq('is_active', true)
-            .single();
+    const { data, error } = await supabase
+        .from('products')
+        .select('*, category:categories(*)')
+        .eq('slug', slug)
+        .eq('is_active', true)
+        .single();
 
-        if (error) return null;
-        return data;
-    } catch {
-        return demoProducts.find(p => p.slug === slug) || null;
+    if (error) {
+        console.error(`Error buscando producto ${slug}:`, error.message);
+        return null;
     }
+
+    return data;
 }
 
 export async function getSiteSetting(key: string): Promise<any> {

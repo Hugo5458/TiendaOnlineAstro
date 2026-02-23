@@ -5,45 +5,31 @@ import { supabase, isSupabaseConfigured, createServerClient } from '../../lib/su
 
 export const prerender = false;
 
-const authToken = Astro.cookies.get('sb-access-token')?.value;
-if (!authToken && isSupabaseConfigured()) {
-  return Astro.redirect('/login?redirect=/cuenta/pedidos');
-}
+// Get user from middleware locals
+const userEmail = Astro.locals.email;
+const user = Astro.locals.user;
 
-// Get user's orders
 let orders: any[] = [];
-let userEmail = '';
 let debugInfo = '';
 
-if (isSupabaseConfigured() && authToken) {
+if (userEmail) {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser(authToken);
-    if (userError) {
-      debugInfo = `Error de autenticación: ${userError.message}`;
+    const serverClient = createServerClient();
+    
+    // Fetch orders with case-insensitive email match
+    const { data, error: ordersError } = await serverClient
+      .from('orders')
+      .select('*, order_items(*)')
+      .ilike('customer_email', userEmail)
+      .order('created_at', { ascending: false });
+    
+    if (ordersError) {
+      debugInfo = `Error de base de datos: ${ordersError.message}`;
       console.error('[Pedidos]', debugInfo);
-    } else {
-      userEmail = user?.email || '';
-      
-      if (userEmail) {
-        const serverClient = createServerClient();
-        
-        const { data, error: ordersError } = await serverClient
-          .from('orders')
-          .select('*, order_items(*)')
-          .ilike('customer_email', userEmail)
-          .order('created_at', { ascending: false });
-        
-        if (ordersError) {
-          debugInfo = `Error de base de datos: ${ordersError.message}`;
-          console.error('[Pedidos]', debugInfo);
-        } else if (data) {
-          orders = data;
-          if (data.length === 0) {
-            debugInfo = `No se encontraron pedidos en la base de datos para ${userEmail}`;
-          }
-        }
-      } else {
-        debugInfo = 'Email de usuario no encontrado en la sesión';
+    } else if (data) {
+      orders = data;
+      if (data.length === 0) {
+        debugInfo = `No se encontraron pedidos en la base de datos para ${userEmail}`;
       }
     }
   } catch (e: any) {
@@ -51,45 +37,10 @@ if (isSupabaseConfigured() && authToken) {
     console.error('[Pedidos]', debugInfo);
   }
 } else {
-  // Demo orders
-  orders = [
-    {
-      id: 'demo-order-1',
-      order_number: 'ORD-2026-001',
-      customer_email: 'demo@example.com',
-      status: 'delivered',
-      total: 15900,
-      created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      order_items: [
-        { product_name: 'Camisa Oxford Azul', quantity: 1, unit_price: 5900 },
-        { product_name: 'Pantalón Chino', quantity: 1, unit_price: 6900 }
-      ]
-    },
-    {
-      id: 'demo-order-2',
-      order_number: 'ORD-2026-002',
-      customer_email: 'demo@example.com',
-      status: 'paid',
-      total: 8900,
-      created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      order_items: [
-        { product_name: 'Vestido Midi Floral', quantity: 1, unit_price: 8900 }
-      ]
-    },
-    {
-      id: 'demo-order-3',
-      order_number: 'ORD-2026-003',
-      customer_email: 'demo@example.com',
-      status: 'shipped',
-      total: 29900,
-      created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-      order_items: [
-        { product_name: 'Traje Azul Marino', quantity: 1, unit_price: 29900 }
-      ]
-    }
-  ];
+  // If no user email, middleware should have redirected, but just in case:
+  return Astro.redirect('/login?redirect=/cuenta/pedidos');
 }
-
+---
 // Status configuration
 const statusConfig: Record<string, { label: string; color: string; icon: string; bgColor: string }> = {
   pending: { 

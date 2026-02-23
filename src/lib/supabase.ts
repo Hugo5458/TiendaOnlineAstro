@@ -303,7 +303,7 @@ export const demoProducts: Product[] = [
         description: 'Falda plisada satinada con movimiento fluido. Cintura elástica para máxima comodidad. Una pieza versátil que eleva cualquier look.',
         price: 5900, compare_at_price: 7500, stock: 20, category_id: '9',
         category: demoCategories[8],
-        images: ['https://images.unsplash.com/photo-1583496661160-fb5886a0abe7?w=800'],
+        images: ['https://images.unsplash.com/photo-1577900232427-18219b9166a0?w=800'],
         sizes: ['XS', 'S', 'M', 'L', 'XL'], colors: ['Dorado', 'Verde', 'Negro'],
         is_featured: true, is_flash_offer: false, is_active: true,
         created_at: '', updated_at: ''

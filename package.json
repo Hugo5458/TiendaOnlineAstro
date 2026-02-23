@@ -30,6 +30,7 @@
   "devDependencies": {
     "@types/nodemailer": "^7.0.9",
     "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0"
+    "@types/react-dom": "^19.0.0",
+    "puppeteer": "^24.37.5"
   }
 }

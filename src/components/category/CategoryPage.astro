@@ -52,10 +52,9 @@ if (!isMainCategory) {
 }
 
 // Listas de fallback para subcategorías
-const hombreSubcatSlugs = ['camisas', 'pantalones', 'camisetas', 'chalecos', 'trajes', 'accesorios', 
+const hombreSubcatSlugs = ['camisas', 'pantalones', 'camisetas', 'chalecos', 'trajes', 
                            'camisas-hombre', 'pantalones-hombre', 'calzado-hombre'];
-const mujerSubcatSlugs = ['vestidos', 'blusas', 'faldas', 'calzado-mujer', 'accesorios', 
-                          'camisas', 'pantalones'];
+const mujerSubcatSlugs = ['vestidos', 'blusas', 'faldas', 'calzado-mujer', 'accesorios'];
 
 // Determine subcategories - usar parent_id primero, fallback a listas hardcodeadas
 let subcategories: typeof allCategories = [];
@@ -116,7 +115,7 @@ const heroImages: Record<string, string> = {
   'camisas-hombre': 'https://images.unsplash.com/photo-1598033129183-c4f50c736c10?w=1600&h=800&fit=crop',
   'pantalones-hombre': 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=1600&h=800&fit=crop',
   'calzado-hombre': 'https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?w=1600&h=800&fit=crop',
-  'faldas': 'https://images.unsplash.com/photo-1583496661160-fb5886a0abe7?w=1600&h=800&fit=crop',
+  'faldas': 'https://images.unsplash.com/photo-1577900232427-18219b9166a0?w=1600&h=800&fit=crop',
   'accesorios': 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=1600&h=800&fit=crop',
 };
 const heroImage = heroImages[slug] || heroImages['hombre'];

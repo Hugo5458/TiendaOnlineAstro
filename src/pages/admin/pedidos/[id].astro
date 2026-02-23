@@ -1,14 +1,15 @@
 ---
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import Button from '../../../components/ui/Button.astro';
-import { supabase } from '../../../lib/supabase';
+import { createServerClient } from '../../../lib/supabase';
 import { formatPrice } from '../../../lib/utils';
 
 export const prerender = false; // SSR
 
 const { id } = Astro.params;
+const supabaseAdmin = createServerClient();
 
-const { data: order, error: orderError } = await supabase
+const { data: order, error: orderError } = await supabaseAdmin
   .from('orders')
   .select('*')
   .eq('id', id)
@@ -18,7 +19,7 @@ if (orderError || !order) {
   return Astro.redirect('/admin/pedidos');
 }
 
-const { data: items } = await supabase
+const { data: items } = await supabaseAdmin
   .from('order_items')
   .select('*')
   .eq('order_id', id)
@@ -32,7 +33,7 @@ if (Astro.request.method === 'POST') {
   const status = (formData.get('status') as string) || order.status;
   const notes = (formData.get('notes') as string) || '';
 
-  const { error: updateError } = await supabase
+  const { error: updateError } = await supabaseAdmin
     .from('orders')
     .update({
       status,

@@ -1,16 +1,17 @@
 ---
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import Button from '../../../components/ui/Button.astro';
-import { supabase, getCategories } from '../../../lib/supabase';
+import { createServerClient, getCategories } from '../../../lib/supabase';
 import { slugify } from '../../../lib/utils';
 
 export const prerender = false; // SSR
 
 const { id } = Astro.params;
 const categories = await getCategories();
+const supabaseAdmin = createServerClient();
 
 // Get product
-const { data: product, error: fetchError } = await supabase
+const { data: product, error: fetchError } = await supabaseAdmin
   .from('products')
   .select('*')
   .eq('id', id)
@@ -39,7 +40,7 @@ if (Astro.request.method === 'POST') {
   
   const slug = name !== product.name ? slugify(name) : product.slug;
   
-  const { error: updateError } = await supabase
+  const { error: updateError } = await supabaseAdmin
     .from('products')
     .update({
       name,

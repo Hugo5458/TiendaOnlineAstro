@@ -11,14 +11,26 @@ export const GET = async () => {
         // Ejemplo: Leer algo de la tabla de pedidos (que suele estar protegida)
         const { data: orders, error: orderError } = await supabase.from('orders').select('id').limit(1);
 
+        const serviceRoleCheck = !!import.meta.env.SUPABASE_SERVICE_ROLE_KEY ? 'SUCCESS' : 'FAILED';
+
+        // SMTP check
+        const smtpCheck = {
+            host: !!import.meta.env.SMTP_HOST ? 'PRESENT' : 'MISSING',
+            user: !!import.meta.env.SMTP_USER ? 'PRESENT' : 'MISSING',
+            pass: !!import.meta.env.SMTP_PASS ? 'PRESENT' : 'MISSING'
+        };
+
         return new Response(JSON.stringify({
-            connection: prodError ? 'FAILED' : 'SUCCESS',
-            productsFound: products?.length || 0,
-            errorProducts: prodError?.message || 'None',
-            serviceRoleCheck: orderError ? 'FAILED (Unauthorized/Key Wrong)' : 'SUCCESS',
-            errorOrders: orderError?.message || 'None',
-            keyPresent: !!import.meta.env.SUPABASE_SERVICE_ROLE_KEY,
-            keyPrefix: import.meta.env.SUPABASE_SERVICE_ROLE_KEY ? import.meta.env.SUPABASE_SERVICE_ROLE_KEY.substring(0, 5) : 'None'
+            status: 'Diagnostic complete',
+            connection: prodError ? 'ERROR' : 'SUCCESS', // Assuming 'error' refers to prodError for database connection
+            serviceRoleCheck,
+            smtpCheck,
+            databaseError: prodError ? prodError.message : null, // Using prodError for database error
+            orderCount: orders ? orders.length : 0, // Using orders for order count
+            env: {
+                hasUrl: !!import.meta.env.PUBLIC_SUPABASE_URL,
+                hasAnonKey: !!import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+            }
         }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' }

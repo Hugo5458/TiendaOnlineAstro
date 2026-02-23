@@ -546,3 +546,25 @@ export async function getCustomerProfile(token: string) {
         return null;
     }
 }
+// ADMIN HELPER FUNCTIONS (Service Role)
+export async function getAdminProducts(): Promise<Product[]> {
+    const supabaseAdmin = createServerClient();
+    const { data, error } = await supabaseAdmin
+        .from('products')
+        .select('*, category:categories(*)')
+        .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+}
+
+export async function getAdminOrders(): Promise<Order[]> {
+    const supabaseAdmin = createServerClient();
+    const { data, error } = await supabaseAdmin
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+}

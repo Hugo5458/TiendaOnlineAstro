@@ -1,16 +1,11 @@
 ---
 import AdminLayout from '../../../layouts/AdminLayout.astro';
-import { supabase, type Order } from '../../../lib/supabase';
+import { getAdminOrders, type Order } from '../../../lib/supabase';
 import { formatPrice } from '../../../lib/utils';
 
 export const prerender = false; // SSR
 
-const { data: orders } = await supabase
-  .from('orders')
-  .select('*')
-  .order('created_at', { ascending: false });
-
-const allOrders = (orders || []) as Order[];
+const allOrders = await getAdminOrders();
 
 // URL params
 const url = Astro.url;

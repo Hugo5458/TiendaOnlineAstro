@@ -1,9 +1,12 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
-import { supabase, getProducts } from '../../lib/supabase';
+import { getAdminProducts, getAdminOrders, createServerClient } from '../../lib/supabase';
 import { formatPrice } from '../../lib/utils';
 
 export const prerender = false; // SSR
+
+// Create admin client for direct queries
+const supabaseAdmin = createServerClient();
 
 // Check authentication
 const accessToken = Astro.cookies.get('sb-access-token')?.value;
@@ -11,8 +14,10 @@ if (!accessToken) {
   return Astro.redirect('/login?redirect=/admin');
 }
 
-// Verify token and check if user is admin
-const { data: { user } } = await supabase.auth.getUser(accessToken);
+// Verify token (auth still uses regular client usually, but here we can use Admin for safety if needed)
+// Actually, auth.getUser needs the specific user token, so we use the regular client for that check
+import { supabase as publicSupabase } from '../../lib/supabase';
+const { data: { user } } = await publicSupabase.auth.getUser(accessToken);
 const ADMIN_EMAILS = ['hugodelmoral77@gmail.com', 'admin@fashionstore.com'];
 const isAdmin = !!user?.email && ADMIN_EMAILS.includes(user.email);
 
@@ -20,13 +25,13 @@ if (!isAdmin) {
   return Astro.redirect('/cuenta');
 }
 
-// Get dashboard stats
-const products = await getProducts();
-const { data: orders } = await supabase.from('orders').select('*').order('created_at', { ascending: true });
-const { data: settings } = await supabase.from('site_settings').select('*');
+// Get dashboard stats using Admin functions
+const products = await getAdminProducts();
+const orders = await getAdminOrders();
+const { data: settings } = await supabaseAdmin.from('site_settings').select('*');
 
 // Get best selling product from order_items
-const { data: orderItems } = await supabase
+const { data: orderItems } = await supabaseAdmin
   .from('order_items')
   .select('product_name, product_image, quantity, unit_price');
 

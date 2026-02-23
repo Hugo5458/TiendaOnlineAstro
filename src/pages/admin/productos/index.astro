@@ -1,11 +1,11 @@
 ---
 import AdminLayout from '../../../layouts/AdminLayout.astro';
-import { getProducts, getCategories } from '../../../lib/supabase';
+import { getAdminProducts, getCategories } from '../../../lib/supabase';
 import { formatPrice, getStockStatus } from '../../../lib/utils';
 
 export const prerender = false; // SSR
 
-const products = await getProducts();
+const products = await getAdminProducts();
 const categories = await getCategories();
 
 // URL params for filtering

@@ -13,33 +13,42 @@ if (!authToken && isSupabaseConfigured()) {
 // Get user's orders
 let orders: any[] = [];
 let userEmail = '';
+let debugInfo = '';
 
 if (isSupabaseConfigured() && authToken) {
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser(authToken);
-    if (userError) throw userError;
-    
-    userEmail = user?.email || '';
-    
-    if (userEmail) {
-      const serverClient = createServerClient();
-      console.log(`[Pedidos] Buscando pedidos para: ${userEmail}`);
+    if (userError) {
+      debugInfo = `Error de autenticación: ${userError.message}`;
+      console.error('[Pedidos]', debugInfo);
+    } else {
+      userEmail = user?.email || '';
       
-      const { data, error: ordersError } = await serverClient
-        .from('orders')
-        .select('*, order_items(*)')
-        .ilike('customer_email', userEmail) // Búsqueda insensible a mayúsculas
-        .order('created_at', { ascending: false });
-      
-      if (ordersError) throw ordersError;
-      
-      if (data) {
-        orders = data;
-        console.log(`[Pedidos] Encontrados ${data.length} pedidos.`);
+      if (userEmail) {
+        const serverClient = createServerClient();
+        
+        const { data, error: ordersError } = await serverClient
+          .from('orders')
+          .select('*, order_items(*)')
+          .ilike('customer_email', userEmail)
+          .order('created_at', { ascending: false });
+        
+        if (ordersError) {
+          debugInfo = `Error de base de datos: ${ordersError.message}`;
+          console.error('[Pedidos]', debugInfo);
+        } else if (data) {
+          orders = data;
+          if (data.length === 0) {
+            debugInfo = `No se encontraron pedidos en la base de datos para ${userEmail}`;
+          }
+        }
+      } else {
+        debugInfo = 'Email de usuario no encontrado en la sesión';
       }
     }
   } catch (e: any) {
-    console.error('[Pedidos] Error cargando pedidos:', e.message);
+    debugInfo = `Error inesperado: ${e.message}`;
+    console.error('[Pedidos]', debugInfo);
   }
 } else {
   // Demo orders
@@ -194,8 +203,8 @@ function canRequestReturn(status: string): boolean {
           </div>
           <h2 class="text-3xl font-serif font-bold text-primary-950 mb-3">Sin pedidos aún</h2>
           <p class="text-primary-700 mb-2 text-lg">Realiza tu primera compra para ver el historial aquí.</p>
-          {userEmail && (
-            <p class="text-xs text-primary-400 mb-8 italic">Pista: Buscando pedidos para {userEmail}</p>
+          {debugInfo && (
+            <p class="text-sm bg-primary-100 text-primary-700 p-2 rounded mb-8 max-w-sm mx-auto italic">{debugInfo}</p>
           )}
           <Button href="/productos" variant="secondary" size="lg" class="shadow-lg">
             Explorar tienda

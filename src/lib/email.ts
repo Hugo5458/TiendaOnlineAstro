@@ -198,14 +198,18 @@ export const sendOrderConfirmationEmail = async (order: EmailOrderDetails) => {
     </html>
   `;
 
-  await transporter.sendMail({
-    from: `"FashionStore" <${import.meta.env.SMTP_USER}>`,
-    to: order.customerEmail,
-    subject: `🧾 Ticket de Compra #${order.orderNumber} - FashionStore`,
-    html: html,
-  });
-
-  console.log(`Ticket de compra enviado a ${order.customerEmail}`);
+  try {
+    const info = await transporter.sendMail({
+      from: `"FashionStore" <${import.meta.env.SMTP_USER}>`,
+      to: order.customerEmail,
+      subject: `🧾 Ticket de Compra #${order.orderNumber} - FashionStore`,
+      html: html,
+    });
+    console.log(`✅ Email enviado: ${info.messageId}`);
+  } catch (err: any) {
+    console.error('❌ Error enviando email:', err.message);
+    throw err; // Re-throw so the webhook can catch it and log it to Stripe
+  }
 };
 
 export const sendPasswordResetEmail = async (email: string, resetLink: string) => {

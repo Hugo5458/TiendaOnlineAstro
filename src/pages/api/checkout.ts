@@ -86,8 +86,8 @@ export const POST: APIRoute = async ({ request, redirect }) => {
             discounts: discounts.length > 0 ? discounts : undefined,
             mode: 'payment',
             ...(customerEmail ? { customer_email: customerEmail } : {}),
-            success_url: `${siteUrl}/pedido/exito?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${siteUrl}/pedido/cancelado`,
+            success_url: `https://yoowww00g84ok88ww4os08o0.victoriafp.online/pedido/exito?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `https://yoowww00g84ok88ww4os08o0.victoriafp.online/pedido/cancelado`,
             shipping_address_collection: {
                 allowed_countries: ['ES'],
             },

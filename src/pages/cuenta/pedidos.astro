@@ -37,10 +37,9 @@ if (userEmail) {
     console.error('[Pedidos]', debugInfo);
   }
 } else {
-  // If no user email, middleware should have redirected, but just in case:
   return Astro.redirect('/login?redirect=/cuenta/pedidos');
 }
----
+
 // Status configuration
 const statusConfig: Record<string, { label: string; color: string; icon: string; bgColor: string }> = {
   pending: { 
